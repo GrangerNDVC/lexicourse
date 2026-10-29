@@ -1,0 +1,160 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.5 — réponse verrouillée et blocs</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
+<canvas id="c" width="960" height="540"></canvas>
+<script>
+const A=/*ASSETS*/;
+const W=960,H=540,cv=document.getElementById('c'),g=cv.getContext('2d');
+function fit(){const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px'}addEventListener('resize',fit);fit();
+
+// ===== RÉGLAGES (monde : la route fait 2×ROAD de large = 4 voies de 1000) =====
+const SEG=200,ROAD=2000,LANES=4,CAMH=1000,DEPTH=1/Math.tan(50*Math.PI/180),DRAW=300,FOG=5,K=A.k;
+const MAXV=6000,ACC=MAXV/4,ROBOT=.55,BOOST=1.45,DRAIN=28,UNLOCK=4,TR=.6,COOL=3;   // robot = 55 % de la vitesse de la route ; le boost vide la jauge en ~3,5 s ; robot débloqué après 4 portiques
+const LX=[-.75,-.25,.25,.75],GATE0=20000,EVERY=36000,SHOW=45000,LOCK=3500;   // LOCK : à cette distance du portique, la voie choisie est verrouillée     // centres des voies, 1er portique, écart entre portiques, distance d'apparition de la consigne
+
+// ===== BANQUE DE QUESTIONS : [consigne, [4 mots], index de la bonne réponse, explication] =====
+const Q=/*QUESTIONS*/;
+
+// ===== PISTE 1 = DONNÉES : [segments, virage (+ droite / − gauche), dénivelé] =====
+const TRACK=[[160,0,0],[120,2,0],[160,0,3000],[120,-3,0],[200,0,-3000],[160,4,0],[120,0,2000],[160,-2,-2000],[160,0,0],[160,3,1500],[160,-3,-1500],[120,0,0]];
+const segs=[];let y0=0,seed=7;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
+for(const[n,c,dy]of TRACK){for(let k=0;k<n;k++){const i=segs.length;
+  segs.push({i,curve:c*Math.sin(Math.PI*(k+.5)/n),spr:[],a:{wy:y0+dy*(1-Math.cos(Math.PI*k/n))/2,wz:i*SEG},b:{wy:y0+dy*(1-Math.cos(Math.PI*(k+1)/n))/2,wz:(i+1)*SEG}})}
+  y0+=dy}
+const N=segs.length,LEN=N*SEG,SPR0=LEN*.8;   // SPR0 = début du sprint final (sans questions)
+
+// ===== ÉTAT =====
+let pos=0,x=LX[1],ln=1,v=0,lap=0,lapT=0,bgX=0,car=0,form=0,fps=60,score=0,ok=0,tot=0,qi=0,gauge=0,boosting=0,passed=0,robotOn=0,spOn=0,spT=0;
+let tr={t:0,dir:1},act={t:0,d:.8,k:'jump'},cool=0,boostT=0,slowT=0,shake=0,msg={t:'',life:0,ok:1},vis=[],btns=[],CH=[],OB={},BG;
+const gates=[];
+function newQ(gt){const q=Q[qi++%Q.length],o=[0,1,2,3];for(let i=3;i>0;i--){const j=rnd()*(i+1)|0;[o[i],o[j]]=[o[j],o[i]]}
+  Object.assign(gt,{q:q[0],w:o.map(i=>q[1][i]),c:o.indexOf(q[2]),e:q[3],t:pickT(),done:0,L:undefined})}
+const pickT=()=>{const a=robotOn?['barrier','blocks','ramp','pool']:['barrier','ramp'];return a[rnd()*a.length|0]};
+const newS=gt=>Object.assign(gt,{sp:1,c:rnd()*4|0,t:pickT(),done:0});
+const say=(t,o)=>msg={t,life:4.5,ok:o};
+
+// ===== CHARGEMENT =====
+const load=u=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=u});
+async function init(){
+  BG=await load(A.bg);
+  for(const o of A.roadside){o.img=await load(o.u);o.ww=o.hh*o.img.width/o.img.height}
+  for(const o of A.obst){o.img=await load(o.u);OB[o.n]=o}
+  for(const c of A.chars){for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load))}CH=A.chars;
+  const by=n=>A.roadside.filter(o=>o.n.startsWith(n)),pool=['pylon','lamp','billboard','house','tree','tree','light'];
+  for(let i=8;i<N;i+=8)for(const side of[-1,1]){const l=by(pool[rnd()*pool.length|0]);segs[i].spr.push({o:l[rnd()*l.length|0],off:side*(1.35+rnd()*1.3)})}
+  for(let i=0;i<N;i+=5){const s=segs[i];
+    if(s.curve>1.2)s.spr.push({o:by('chevron')[0],off:-1.18});else if(s.curve<-1.2)s.spr.push({o:by('chevron')[0],off:1.18,flip:1});
+    else if(i%40==0)s.spr.push({o:by('barrier')[0],off:(i%80?-1:1)*1.12})}
+  for(let z=GATE0;z<SPR0-12000;z+=EVERY){const gt={z};newQ(gt);gates.push(gt);segs[z/SEG|0].gate=gt}
+  for(let z=SPR0;z<LEN-3000;z+=6000){const gt={z};newS(gt);gates.push(gt);segs[z/SEG|0].gate=gt}   // sprint final : rangées d’obstacles sans question
+  say('Au début la route est lente : place-toi sur la voie du bon mot. Le bloc ne disparaît que sur la bonne réponse !',1);msg.life=8;
+  requestAnimationFrame(loop)}
+
+// ===== ACTIONS (clavier, souris et plus tard tactile appellent les mêmes fonctions) =====
+const clampL=l=>Math.max(0,Math.min(3,l)),lk=()=>gates.some(t=>!t.sp&&!t.done&&t.L!==undefined),setLn=l=>{if(!lk())ln=clampL(l)};
+function toggle(){if(!robotOn){say('Le robot se débloque en progressant : réponds aux consignes !',1);return}if(tr.t>0||cool>0||act.t>0)return;form^=1;tr={t:TR,dir:form?1:-1};cool=TR+COOL}
+function startAct(){if(act.t<=0&&tr.t<=0)act={t:.8,d:.8,k:form?'step':'jump'}}
+function pick(i){car=i;form=0;tr.t=0;act.t=0;cool=0}
+const chk=()=>{if(!robotOn&&passed>=UNLOCK){robotOn=1;say('Robot débloqué ! Il ralentit pour mieux lire et enjambe les gros obstacles (Espace)',1)}};
+addEventListener('keydown',e=>{const k=e.key;if([' ','ArrowUp','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();if(e.repeat)return;
+  if(k=='ArrowLeft'||k=='q'||k=='a')setLn(ln-1);if(k=='ArrowRight'||k=='d')setLn(ln+1);
+  if(k==' ')toggle();if(k=='ArrowUp')startAct();if(k=='b'||k=='Shift')boosting=1;if(k=='n'){passed+=3;chk()}if('1234'.includes(k))pick(+k-1)});
+addEventListener('keyup',e=>{if(e.key=='b'||e.key=='Shift')boosting=0});addEventListener('pointerup',()=>boosting=0);
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,py=(e.clientY-r.top)*H/r.height;
+  for(const b of btns)if(px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h){b.f();return}
+  for(const s of vis)if(py>=s.b.sy&&py<=s.a.sy){const l=Math.floor((px-(s.a.sx-s.a.sw))/(2*s.a.sw)*LANES);if(l>=0&&l<LANES){setLn(l);return}break}
+  setLn(ln+(px<W/2?-1:1))});
+
+// ===== MISE À JOUR (60 calculs par seconde) =====
+function hit(gt){gt.done=1;const L=gt.L!==undefined?gt.L:clampL(Math.round((x+.75)/.5)),ideal=(gt.t=='barrier'||gt.t=='ramp')?0:1;
+  if(gt.sp){if(L==gt.c)return;if(boosting&&gauge>0&&form==ideal){startAct();score+=5;return}v*=.5;shake=.35;say('Obstacle ! Prends la voie libre, ou boost + bonne forme',0);return}
+  tot++;passed++;
+  if(L==gt.c){ok++;score+=10;
+    if(form==ideal){gauge=Math.min(100,gauge+50);startAct();say('Bonne réponse ! '+(form?'Enjambement':'Saut')+' réussi : jauge de boost +50',1)}
+    else{gauge=Math.min(100,gauge+25);slowT=1.5;say('Bonne réponse (+25), mais pas la bonne forme : tu passes en forçant',1)}}
+  else{v*=.45;shake=.4;say('Raté ! '+gt.e,0)}
+  chk()}
+function update(dt){
+  const s=segs[pos/SEG|0],road=MAXV*Math.min(1,.3+.07*passed),vmax=road*(form?ROBOT:1)*(boosting&&gauge>0?BOOST:1)*(slowT>0?.6:1);if(boosting&&gauge>0)gauge=Math.max(0,gauge-DRAIN*dt);
+  x+=(LX[ln]-x)*Math.min(1,dt*9);
+  v+=Math.sign(vmax-v)*Math.min(Math.abs(vmax-v),ACC*dt*(v>vmax?2:1));
+  for(const gt of gates)if(!gt.sp&&!gt.done&&gt.L===undefined&&pos>=gt.z-LOCK){gt.L=clampL(Math.round((x+.75)/.5));ln=gt.L}   // verrouillage de la réponse
+  const p0=pos;pos+=v*dt;lapT+=dt;for(const gt of gates)if(!gt.done&&p0<gt.z&&pos>=gt.z)hit(gt);
+  if(pos>=SPR0){if(!spOn){spOn=1;spT=0;say('SPRINT FINAL : plus de questions ! Vide ta jauge de boost : en boost, la bonne forme franchit tous les obstacles',1)}spT+=dt}
+  if(pos>=LEN){if(spOn){say('Sprint final terminé en '+spT.toFixed(1)+' s',1);spOn=0}pos-=LEN;lap++;lapT=0;gates.forEach(t=>t.sp?newS(t):newQ(t))}
+  bgX+=s.curve*(v/MAXV)*dt*60;
+  tr.t=Math.max(0,tr.t-dt);act.t=Math.max(0,act.t-dt);cool=Math.max(0,cool-dt);slowT=Math.max(0,slowT-dt);shake=Math.max(0,shake-dt);msg.life=Math.max(0,msg.life-dt)}
+
+// ===== RENDU =====
+function quad(x1,y1,x2,y2,x3,y3,x4,y4,c){g.fillStyle=c;g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.lineTo(x3,y3);g.lineTo(x4,y4);g.closePath();g.fill()}
+function pr(p,cx,cy,cz){p.cz=p.wz-cz;p.sc=DEPTH/p.cz;p.sx=Math.round(W/2+p.sc*(-cx)*W/2);p.sy=Math.round(H/2-p.sc*(p.wy-cy)*H/2);p.sw=Math.round(p.sc*ROAD*W/2)}
+function seg(s){const a=s.a,b=s.b,st=(s.i/3|0)&1;
+  g.fillStyle=st?'#0a0f33':'#0d1342';g.fillRect(0,b.sy,W,a.sy-b.sy);
+  quad(a.sx-a.sw,a.sy,a.sx+a.sw,a.sy,b.sx+b.sw,b.sy,b.sx-b.sw,b.sy,st?'#2a2d3a':'#2f323f');
+  const c=st?'#22e6ff':'#0b8fb0',ra=a.sw*.05,rb=b.sw*.05;
+  quad(a.sx-a.sw,a.sy,a.sx-a.sw+ra,a.sy,b.sx-b.sw+rb,b.sy,b.sx-b.sw,b.sy,c);quad(a.sx+a.sw-ra,a.sy,a.sx+a.sw,a.sy,b.sx+b.sw,b.sy,b.sx+b.sw-rb,b.sy,c);
+  if(st)for(let l=1;l<LANES;l++){const f=l/LANES*2-1,xa=a.sx+a.sw*f,xb=b.sx+b.sw*f,wa=a.sw*.012,wb=b.sw*.012;quad(xa-wa,a.sy,xa+wa,a.sy,xb+wb,b.sy,xb-wb,b.sy,'#e8f4ff')}
+  if(s.fog>.01){g.globalAlpha=s.fog;g.fillStyle='#1a1f5e';g.fillRect(0,b.sy,W,a.sy-b.sy);g.globalAlpha=1}}
+function gate(s){const a=s.a,gt=s.gate,sc=a.sc,hp=h=>sc*h*H/2,L=a.sx-a.sw,R=a.sx+a.sw,top=a.sy-hp(3000),pw=Math.max(3,a.sw*.05);
+  g.globalAlpha=Math.max(.65,1-s.fog);
+  for(let i=0;i<LANES;i++){let k=1;   // toutes les voies sont bloquées ; le bloc de la bonne voie s’efface seulement si tu y es au moment du verrouillage
+    if(gt.sp){if(i==gt.c)continue}else if(gt.L!==undefined&&gt.L==gt.c&&i==gt.c){k=1-Math.min(1,(pos-(gt.z-LOCK))/(LOCK*.5));if(k<=0)continue}
+    const o=OB[gt.t],w=sc*o.ww*W/2,h=w*o.img.height/o.img.width*k;g.globalAlpha=Math.max(.65,1-s.fog)*k;g.drawImage(o.img,a.sx+a.sw*LX[i]-w/2,a.sy-h,w,h)}
+  g.globalAlpha=Math.max(.65,1-s.fog);
+  if(gt.sp){g.globalAlpha=1;return}
+  g.fillStyle='#1d2a55';g.fillRect(L-pw*1.6,top,pw*1.6,a.sy-top);g.fillRect(R,top,pw*1.6,a.sy-top);
+  g.fillStyle='#2b3a6b';g.fillRect(L-pw*1.6,top,R-L+pw*3.2,hp(380));g.fillStyle='#22e6ff';g.fillRect(L-pw*1.6,top+hp(380)-Math.max(2,hp(40)),R-L+pw*3.2,Math.max(2,hp(40)));
+  const pwid=a.sw*.46,ph=hp(1500),py=top+hp(430);
+  for(let i=0;i<LANES;i++){const cx=a.sx+a.sw*LX[i];g.fillStyle='#071433';g.fillRect(cx-pwid/2,py,pwid,ph);g.strokeStyle='#22e6ff';g.lineWidth=Math.max(1,hp(30));g.strokeRect(cx-pwid/2,py,pwid,ph);
+    let fs=Math.max(7,ph*.45);g.font='bold '+fs+'px system-ui,sans-serif';while(g.measureText(gt.w[i]).width>pwid*.9&&fs>6){fs--;g.font='bold '+fs+'px system-ui,sans-serif'}
+    g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';g.fillText(gt.w[i],cx,py+ph/2);g.textAlign='left';g.textBaseline='alphabetic'}
+  g.globalAlpha=1}
+function player(){const c=CH[car];let im,lift=0;
+  if(act.t>0){const u=1-act.t/act.d,f=act.k=='jump'?c.jump:c.step;im=f[u<.25?0:u<.75?1:2];lift=Math.sin(Math.PI*u)*(act.k=='jump'?90:35)}
+  else if(tr.t>0){const u=1-tr.t/TR,n=c.tr.length;im=c.tr[Math.min(n-1,Math.floor((tr.dir>0?u:1-u)*n))]}
+  else im=form?c.tr[c.tr.length-1]:c.tr[0];
+  const w=im.width/K,h=im.height/K,bob=Math.sin(pos/90)*v/MAXV*2;
+  g.fillStyle='rgba(0,0,0,.35)';g.beginPath();g.ellipse(W/2,H-14,w*.4*(1-lift/250),9,0,0,7);g.fill();
+  g.drawImage(im,W/2-w/2,H-14-h-lift+bob,w,h)}
+function wrap(t,mw){const out=[];let l='';for(const w of t.split(' ')){if(g.measureText(l+' '+w).width>mw&&l){out.push(l);l=w}else l=l?l+' '+w:w}out.push(l);return out}
+function box(x1,y1,w,h,c){g.fillStyle=c;g.beginPath();g.roundRect(x1,y1,w,h,10);g.fill()}
+function hud(){
+  g.font='bold 18px system-ui,sans-serif';g.fillStyle='#fff';g.fillText(Math.round(v/MAXV*260)+' km/h · '+(form?'ROBOT':'VOITURE')+(boosting&&gauge>0?' · BOOST':''),20,H-76);
+  g.fillText('Tour '+(lap+1)+' · '+lapT.toFixed(1)+' s · score '+score+' ('+ok+'/'+tot+')',20,H-54);
+  g.font='13px system-ui,sans-serif';g.fillStyle='#9fe8ff';g.fillText(Math.round(fps)+' images/s · '+CH[car].label,20,H-34);
+  g.fillText('← → ou clic sur une voie · Espace = transformer · B ou Maj (maintenu) = boost · 1-4 = personnage · N = test progression',20,H-8);
+  const ng=gates.find(t=>!t.sp&&!t.done&&t.z>pos&&t.z-pos<SHOW);let ey=12;
+  if(ng){g.font='bold 27px system-ui,sans-serif';const L=wrap(ng.q,770),bh=18+L.length*34;box(W/2-400,10,800,bh,'rgba(5,12,40,.9)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,44+i*34));
+    g.font='bold 24px system-ui,sans-serif';ng.w.forEach((w,i)=>{const cx=W/2-400+i*200;box(cx,bh+16,192,44,i==ln?(lk()?'#c8720e':'#0e7fb8'):'rgba(5,12,40,.9)');g.fillStyle='#fff';g.fillText(w,cx+96,bh+46)});g.textAlign='left';ey=bh+68}
+  if(msg.life>0){g.font='bold 17px system-ui,sans-serif';const L=wrap(msg.t,740),y=ey;box(W/2-390,y,780,14+L.length*24,msg.ok?'rgba(10,110,60,.92)':'rgba(150,25,40,.92)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,y+26+i*24));g.textAlign='left'}
+  btns=[];const cols=['#e03030','#e8c820','#2a5be0','#333'];
+  cols.forEach((c,i)=>{const b={x:W-196+i*46,y:H-60,w:40,h:40,f:()=>pick(i)};btns.push(b);box(b.x,b.y,40,40,c);if(i==car){g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.roundRect(b.x,b.y,40,40,10);g.stroke()}g.fillStyle=i==1?'#000':'#fff';g.font='bold 18px system-ui';g.fillText(i+1,b.x+14,b.y+27)});
+  const bx=W-86,by=H-190,ready=robotOn&&cool<=0&&act.t<=0;btns.push({x:bx-46,y:by-46,w:92,h:92,f:toggle});
+  g.fillStyle=ready?'rgba(5,40,70,.9)':'rgba(40,40,50,.85)';g.beginPath();g.arc(bx,by,46,0,7);g.fill();g.strokeStyle=ready?'#22e6ff':'#667';g.lineWidth=4;g.stroke();
+  if(!ready&&cool>0){g.strokeStyle='#22e6ff';g.beginPath();g.arc(bx,by,40,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-cool/(TR+COOL)));g.stroke()}
+  g.fillStyle='#fff';g.font='bold 30px system-ui';g.textAlign='center';g.fillText('⇄',bx,by+6);g.font='bold 12px system-ui';g.fillText(!robotOn?'VERROUILLÉ':form?'→ VOITURE':'→ ROBOT',bx,by+26);
+  const gx=W-86,gy=H-300;btns.push({x:gx-46,y:gy-46,w:92,h:92,f:()=>boosting=1});
+  g.fillStyle=boosting&&gauge>0?'rgba(120,60,0,.95)':'rgba(40,25,10,.9)';g.beginPath();g.arc(gx,gy,46,0,7);g.fill();g.strokeStyle='#5a4a30';g.lineWidth=4;g.stroke();
+  g.strokeStyle='#ffb020';g.beginPath();g.arc(gx,gy,40,-Math.PI/2,-Math.PI/2+Math.PI*2*gauge/100);g.stroke();
+  g.fillStyle='#fff';g.font='bold 14px system-ui';g.fillText('BOOST',gx,gy-2);g.font='bold 12px system-ui';g.fillText(Math.round(gauge)+' %',gx,gy+16);g.textAlign='left'}
+function render(){
+  g.save();if(shake>0)g.translate((Math.random()-.5)*12,(Math.random()-.5)*12);
+  g.fillStyle='#0a0f33';g.fillRect(-20,-20,W+40,H+40);
+  const k=.72,tw=BG.width*k,th=BG.height*k,top=H/2+8-435*k;
+  for(let t=Math.floor(bgX/tw);t*tw-bgX<W;t++){g.save();g.translate(t*tw-bgX+(t&1?tw:0),top);if(t&1)g.scale(-1,1);g.drawImage(BG,0,0,tw,th);g.restore()}
+  g.fillStyle='#0b1038';g.fillRect(-20,H/2+8,W+40,H);
+  const b=segs[pos/SEG|0],bp=pos%SEG/SEG,py=b.a.wy+(b.b.wy-b.a.wy)*bp;let cx=0,dc=-b.curve*bp,maxy=H;vis=[];
+  for(let n=0;n<DRAW;n++){const s=segs[(b.i+n)%N],cz=pos-(s.i<b.i?LEN:0);
+    pr(s.a,x*ROAD-cx,py+CAMH,cz);pr(s.b,x*ROAD-cx-dc,py+CAMH,cz);cx+=dc;dc+=s.curve;s.clip=maxy;s.fog=1-1/Math.exp(n/DRAW*n/DRAW*FOG);
+    if(s.a.cz<=DEPTH||s.b.sy>=s.a.sy||s.b.sy>=maxy)continue;seg(s);vis.push(s);maxy=s.b.sy}
+  for(let n=DRAW-1;n>0;n--){const s=segs[(b.i+n)%N];
+    for(const q of s.spr){const o=q.o,sc=s.a.sc,w=sc*o.ww*W/2,h=w*o.img.height/o.img.width,sx=s.a.sx+sc*q.off*ROAD*W/2-w/2,sy=s.a.sy-h,cl=Math.max(0,sy+h-s.clip);
+      if(cl<h&&s.a.cz>DEPTH){const sh=o.img.height*(1-cl/h);g.globalAlpha=1-s.fog;
+        if(q.flip){g.save();g.translate(sx+w,sy);g.scale(-1,1);g.drawImage(o.img,0,0,o.img.width,sh,0,0,w,h-cl);g.restore()}else g.drawImage(o.img,0,0,o.img.width,sh,sx,sy,w,h-cl);g.globalAlpha=1}}
+    if(s.gate&&s.a.cz>DEPTH)gate(s)}
+  player();g.restore();hud()}
+
+let last=performance.now(),acc=0;
+function loop(t){const f=Math.min(.25,(t-last)/1000);last=t;acc+=f;fps+=(1/Math.max(f,.001)-fps)*.05;while(acc>=1/60){update(1/60);acc-=1/60}render();requestAnimationFrame(loop)}
+init();
+</script></body></html>

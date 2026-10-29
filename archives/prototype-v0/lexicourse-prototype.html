@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber-Lexic : Course Robot 5ème</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #030712;
+      color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    #game-container {
+      position: relative;
+      width: 95vw;
+      max-width: 1280px;
+      height: 82vh;
+      max-height: 780px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 3px solid #38bdf8;
+      background: #000;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .hud-overlay {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .hud-box {
+      background: rgba(15, 23, 42, 0.9);
+      border: 2px solid #38bdf8;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 18px;
+      color: #38bdf8;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+    }
+    .question-banner {
+      position: absolute;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.96);
+      border: 3px solid #f59e0b;
+      color: #fff;
+      padding: 16px 30px;
+      border-radius: 25px;
+      font-size: 22px;
+      font-weight: bold;
+      text-align: center;
+      width: 85%;
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.5);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .timer-indicator {
+      position: absolute;
+      top: 155px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(245, 158, 11, 0.95);
+      color: #000;
+      padding: 6px 20px;
+      border-radius: 15px;
+      font-size: 15px;
+      font-weight: bold;
+      z-index: 5;
+    }
+    #error-overlay {
+      position: absolute;
+      top: 220px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(30, 41, 59, 0.94);
+      border: 3px solid #ef4444;
+      border-radius: 16px;
+      padding: 20px 30px;
+      max-width: 700px;
+      width: 80%;
+      text-align: center;
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+      display: none;
+      z-index: 15;
+      pointer-events: none;
+    }
+    .error-title { color: #ef4444; font-size: 22px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+    .error-msg { font-size: 17px; line-height: 1.5; color: #f1f5f9; }
+
+    #boost-indicator {
+      position: absolute;
+      top: 220px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      color: #fff;
+      padding: 12px 30px;
+      border-radius: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.8);
+      display: none;
+      z-index: 15;
+      pointer-events: none;
+      text-transform: uppercase;
+    }
+
+    #screen-start, #screen-over {
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 7, 18, 0.96);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+    h1 { color: #38bdf8; font-size: 42px; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; }
+    p { color: #cbd5e1; margin-bottom: 25px; max-width: 700px; text-align: center; line-height: 1.6; font-size: 18px; }
+    
+    .btn {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      font-size: 22px;
+      font-weight: bold;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 6px 25px rgba(2, 132, 199, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="gameCanvas" width="1280" height="780"></canvas>
+
+  <div class="hud-overlay">
+    <div class="hud-box">Vitesse : <span id="hud-speed">0</span> km/h</div>
+    <div class="hud-box">Mode : <span id="hud-mode" style="color:#e0f2fe;">VOITURE</span></div>
+    <div class="hud-box">Score : <span id="hud-score">0</span> pts</div>
+  </div>
+
+  <div id="question-banner" class="question-banner">Chargement...</div>
+  <div id="timer-indicator" class="timer-indicator" style="display: none;">📖 Lis bien la consigne...</div>
+
+  <div id="error-overlay">
+    <div class="error-title">⚠️ Mauvaise Voie !</div>
+    <div id="error-text" class="error-msg">Explication...</div>
+  </div>
+
+  <div id="boost-indicator">🚀 BOOST ACTIVÉ !</div>
+
+  <div id="screen-start">
+    <h1>Cyber-Lexic : Course Robot 5ème</h1>
+    <p>Le jeu intègre directement ta planche de sprites avec découpage intelligent et animations logicielles !</p>
+    <button class="btn" onclick="startGame()">COMMENCER LA MISSION</button>
+  </div>
+
+  <div id="screen-over" style="display: none;">
+    <h1>Course Terminée !</h1>
+    <p id="over-msg">Score final : 0 points</p>
+    <button class="btn" onclick="startGame()">REJOUER</button>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // Banque de questions
+  const questionsNiveau1 = [
+    {
+      question: "Quelle consigne demande d'expliquer le 'POURQUOI' avec des preuves du texte ?",
+      options: ["Relever", "Justifier", "Résumer", "Nommer"],
+      correct: 1,
+      explanation: "<b>'Justifier'</b> signifie prouver ce que l'on affirme en citant le texte ou en donnant des arguments précis."
+    },
+    {
+      question: "Quelle consigne demande de recopier exactement un mot ou un passage du texte ?",
+      options: ["Surligner", "Relever", "Inventer", "Raconter"],
+      correct: 1,
+      explanation: "<b>'Relever'</b> vous demande d'extraire directement un élément du texte sans le modifier."
+    },
+    {
+      question: "Quelle consigne signifie 'rendre plus clair / donner tous les détails' ?",
+      options: ["Expliciter", "Raturer", "Ignorer", "Citer"],
+      correct: 0,
+      explanation: "<b>'Expliciter'</b> vient de 'explicite' : cela veut dire expliquer clairement."
+    }
+  ];
+
+  // Chargement de l'image de la planche de sprites directement dans le code
+  const spriteSheet = new Image();
+  spriteSheet.src = 'sprite 1.jfif'; // Pointe vers ton image locale si elle est dans le même dossier, ou remplaçable par l'URL intégrée
+
+  let gameRunning = false;
+  let score = 0;
+  let currentQuestionIdx = 0;
+
+  let gameState = 'reading'; 
+  let readingTimerFrames = 0;
+  let stateTimerFrames = 0;
+
+  let playerLane = 1;
+  let playerX = 640;
+  let targetPlayerX = 640;
+  let player = { mode: 'car', blinkRed: false };
+
+  let roadObjects = [];
+  let sideDecor = [];
+  let scrollSpeed = 0.002;
+  let wheelRotationAngle = 0;
+
+  for(let i = 0; i < 12; i++) {
+    sideDecor.push({ z: i * 0.08 });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (!gameRunning) return;
+
+    if (e.key === 'ArrowLeft' && playerLane > 0) playerLane--;
+    else if (e.key === 'ArrowRight' && playerLane < 3) playerLane++;
+    else if (e.code === 'Space') {
+      player.mode = player.mode === 'car' ? 'robot' : 'car';
+      document.getElementById('hud-mode').innerText = player.mode === 'car' ? 'VOITURE' : 'ROBOT';
+      document.getElementById('hud-mode').style.color = player.mode === 'car' ? '#e0f2fe' : '#f59e0b';
+    }
+  });
+
+  function startGame() {
+    score = 0;
+    currentQuestionIdx = 0;
+    gameRunning = true;
+    playerLane = 1;
+    player.mode = 'car';
+    
+    document.getElementById('screen-start').style.display = 'none';
+    document.getElementById('screen-over').style.display = 'none';
+    document.getElementById('error-overlay').style.display = 'none';
+    document.getElementById('boost-indicator').style.display = 'none';
+
+    loadNewQuestion();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function loadNewQuestion() {
+    if (currentQuestionIdx >= questionsNiveau1.length) currentQuestionIdx = 0;
+
+    const q = questionsNiveau1[currentQuestionIdx];
+    document.getElementById('question-banner').innerText = "❓ " + q.question;
+    document.getElementById('timer-indicator').style.display = 'block';
+    document.getElementById('error-overlay').style.display = 'none';
+    document.getElementById('boost-indicator').style.display = 'none';
+
+    gameState = 'reading';
+    readingTimerFrames = 5 * 60;
+
+    roadObjects = [];
+    for (let i = 0; i < 4; i++) {
+      roadObjects.push({
+        type: 'word',
+        lane: i,
+        text: q.options[i],
+        isCorrect: i === q.correct,
+        z: 0.02,
+        passed: false
+      });
+    }
+  }
+
+  function update() {
+    if (gameState === 'boosting') scrollSpeed = 0.009;
+    else if (gameState === 'recovering') scrollSpeed = 0.0015;
+    else if (gameState === 'racing') scrollSpeed = 0.0045;
+    else scrollSpeed = 0.002;
+
+    for (let pole of sideDecor) {
+      pole.z += scrollSpeed;
+      if (pole.z > 1.0) pole.z -= 1.0;
+    }
+    wheelRotationAngle += scrollSpeed * 40;
+
+    document.getElementById('hud-speed').innerText = Math.round(scrollSpeed * 25000);
+
+    let centerX = canvas.width / 2;
+    targetPlayerX = (centerX - 550) + (playerLane + 0.5) * 275;
+    playerX += (targetPlayerX - playerX) * 0.2;
+
+    if (gameState === 'reading') {
+      readingTimerFrames--;
+      let secLeft = Math.ceil(readingTimerFrames / 60);
+      document.getElementById('timer-indicator').innerText = `📖 Lis la consigne... Prépare-toi (${secLeft}s)`;
+      if (readingTimerFrames <= 0) {
+        gameState = 'racing';
+        document.getElementById('timer-indicator').style.display = 'none';
+      }
+      return;
+    }
+
+    if (gameState === 'racing') {
+      for (let obj of roadObjects) {
+        obj.z += 0.0045;
+        if (!obj.passed && obj.z >= 0.88 && obj.z <= 0.98) {
+          if (obj.lane === playerLane) {
+            obj.passed = true;
+            handleWordSelection(obj);
+          }
+        }
+      }
+    }
+
+    if (gameState === 'boosting' || gameState === 'recovering') {
+      stateTimerFrames--;
+      if (stateTimerFrames <= 0) {
+        player.blinkRed = false;
+        currentQuestionIdx++;
+        loadNewQuestion();
+      }
+    }
+  }
+
+  function handleWordSelection(obj) {
+    if (obj.isCorrect) {
+      gameState = 'boosting';
+      stateTimerFrames = 120;
+      score += 150;
+      document.getElementById('hud-score').innerText = score;
+      document.getElementById('boost-indicator').style.display = 'block';
+    } else {
+      gameState = 'recovering';
+      stateTimerFrames = 300;
+      player.blinkRed = true;
+
+      const q = questionsNiveau1[currentQuestionIdx];
+      document.getElementById('error-text').innerHTML = q.explanation;
+      document.getElementById('error-overlay').style.display = 'block';
+
+      score = Math.max(0, score - 50);
+      document.getElementById('hud-score').innerText = score;
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Ciel
+    let gradSky = ctx.createLinearGradient(0, 0, 0, 300);
+    gradSky.addColorStop(0, '#030712');
+    gradSky.addColorStop(1, '#1e293b');
+    ctx.fillStyle = gradSky;
+    ctx.fillRect(0, 0, canvas.width, 300);
+
+    // Route Trapèze
+    let horizonY = 280;
+    let topWidth = 200;
+    let bottomWidth = 1100;
+    let centerX = canvas.width / 2;
+
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.moveTo(centerX - topWidth / 2, horizonY);
+    ctx.lineTo(centerX + topWidth / 2, horizonY);
+    ctx.lineTo(centerX + bottomWidth / 2, canvas.height);
+    ctx.lineTo(centerX - bottomWidth / 2, canvas.height);
+    ctx.fill();
+
+    // Décors
+    for (let pole of sideDecor) {
+      let z = pole.z;
+      let leftX = (centerX - topWidth / 2) + ( (centerX - bottomWidth / 2) - (centerX - topWidth / 2) ) * z;
+      let rightX = (centerX + topWidth / 2) + ( (centerX + bottomWidth / 2) - (centerX + topWidth / 2) ) * z;
+      let y = horizonY + (canvas.height - horizonY) * z;
+      let h = 80 * z;
+
+      ctx.strokeStyle = (gameState === 'boosting') ? '#10b981' : '#38bdf8';
+      ctx.lineWidth = Math.max(1, 3 * z);
+      ctx.beginPath(); ctx.moveTo(leftX - 20 * z, y); ctx.lineTo(leftX - 20 * z, y - h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rightX + 20 * z, y); ctx.lineTo(rightX + 20 * z, y - h); ctx.stroke();
+    }
+
+    for (let i = 0; i <= 4; i++) {
+      let topX = (centerX - topWidth / 2) + (topWidth / 4) * i;
+      let botX = (centerX - bottomWidth / 2) + (bottomWidth / 4) * i;
+      ctx.strokeStyle = (i === 2) ? '#38bdf8' : '#334155';
+      ctx.lineWidth = (i === 2) ? 3 : 1.5;
+      ctx.beginPath(); ctx.moveTo(topX, horizonY); ctx.lineTo(botX, canvas.height); ctx.stroke();
+    }
+
+    // Mots
+    if (gameState === 'racing' || gameState === 'reading') {
+      for (let obj of roadObjects) {
+        if (obj.z < 0.01 || obj.z > 1.05) continue;
+
+        let topX = (centerX - topWidth / 2) + (topWidth / 4) * (obj.lane + 0.5);
+        let botX = (centerX - bottomWidth / 2) + (bottomWidth / 4) * (obj.lane + 0.5);
+        let x = topX + (botX - topX) * obj.z;
+        let y = horizonY + (canvas.height - horizonY) * obj.z;
+        
+        let scale = 0.2 + 0.8 * obj.z; 
+        let width = 230 * scale;
+        let height = 70 * scale;
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = Math.max(1.5, 3 * scale);
+        ctx.beginPath();
+        ctx.roundRect(x - width / 2, y - height / 2, width, height, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        let fontSize = Math.round(20 * scale);
+        ctx.font = `bold ${Math.max(13, fontSize)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(obj.text, x, y);
+      }
+    }
+
+    drawPlayerSprite();
+  }
+
+  function drawPlayerSprite() {
+    let py = 640;
+    ctx.save();
+    ctx.translate(playerX, py);
+
+    // Si l'image est chargée, on découpe directement la vue de dos de la voiture (dernière case en haut) 
+    // ou du robot (dernière case en bas) depuis ta planche !
+    if (spriteSheet.complete && spriteSheet.naturalWidth !== 0) {
+      let sw = spriteSheet.width / 4;
+      let sh = spriteSheet.height / 2;
+      // Col 3 = vue de dos, Row 0 = voiture, Row 1 = robot
+      let sx = 3 * sw; 
+      let sy = (player.mode === 'car') ? 0 : sh;
+
+      let drawW = 140;
+      let drawH = 100;
+
+      if (player.blinkRed && Math.floor(Date.now() / 150) % 2 === 0) {
+        ctx.globalAlpha = 0.5; // Effet clignotant rouge en cas d'erreur
+      }
+
+      ctx.drawImage(spriteSheet, sx, sy, sw, sh, -drawW / 2, -drawH / 2, drawW, drawH);
+    } else {
+      // Forme de secours si l'image charge
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-50, -30, 100, 60);
+    }
+
+    ctx.restore();
+
+    // Tableau de bord
+    ctx.fillStyle = '#030712';
+    ctx.fillRect(0, 710, canvas.width, 70);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(0, 710); ctx.lineTo(canvas.width, 710); ctx.stroke();
+
+    for(let i = 0; i < 4; i++) {
+      let bx = canvas.width / 2 - 300 + i * 200;
+      ctx.fillStyle = (i === playerLane) ? (gameState === 'boosting' ? '#10b981' : '#38bdf8') : '#1e293b';
+      ctx.fillRect(bx - 45, 722, 90, 36);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`VOIE ${i+1}`, bx, 740);
+    }
+  }
+
+  function gameLoop() {
+    if (!gameRunning) return;
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+</script>
+</body>
+</html>

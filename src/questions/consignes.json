@@ -1,0 +1,146 @@
+[
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande d’expliquer le POURQUOI avec des preuves du texte ?",
+    "options": [
+      "Relever",
+      "Justifier",
+      "Résumer",
+      "Nommer"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Justifier : prouver ce que l’on affirme en citant le texte ou en donnant des arguments précis."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de recopier exactement un mot ou un passage du texte ?",
+    "options": [
+      "Surligner",
+      "Relever",
+      "Inventer",
+      "Raconter"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Relever : extraire directement un élément du texte sans le modifier."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne signifie rendre plus clair, donner tous les détails ?",
+    "options": [
+      "Expliciter",
+      "Raturer",
+      "Ignorer",
+      "Citer"
+    ],
+    "bonne_reponse": 0,
+    "explication": "Expliciter vient de explicite : expliquer clairement."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de redire un texte avec tes mots, en plus court ?",
+    "options": [
+      "Recopier",
+      "Résumer",
+      "Citer",
+      "Nommer"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Résumer : dire l’essentiel en moins de mots, avec tes propres mots."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de donner le nom d’un élément précis ?",
+    "options": [
+      "Nommer",
+      "Justifier",
+      "Résumer",
+      "Comparer"
+    ],
+    "bonne_reponse": 0,
+    "explication": "Nommer : donner le nom exact de la chose demandée."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de montrer ce qui est semblable et différent ?",
+    "options": [
+      "Décrire",
+      "Comparer",
+      "Définir",
+      "Citer"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Comparer : chercher les ressemblances et les différences."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de dire la même chose avec d’autres mots ?",
+    "options": [
+      "Reformuler",
+      "Relever",
+      "Recopier",
+      "Ignorer"
+    ],
+    "bonne_reponse": 0,
+    "explication": "Reformuler : redire autrement, sans changer le sens."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de donner le sens précis d’un mot ?",
+    "options": [
+      "Raconter",
+      "Citer",
+      "Définir",
+      "Nommer"
+    ],
+    "bonne_reponse": 2,
+    "explication": "Définir : expliquer ce que le mot veut dire."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de rapporter les paroles exactes, entre guillemets ?",
+    "options": [
+      "Résumer",
+      "Citer",
+      "Définir",
+      "Décrire"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Citer : reprendre les mots exacts et les mettre entre guillemets."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de dire comment est une personne, un lieu ou un objet ?",
+    "options": [
+      "Justifier",
+      "Relever",
+      "Décrire",
+      "Expliciter"
+    ],
+    "bonne_reponse": 2,
+    "explication": "Décrire : dire comment est la chose (aspect, qualités, détails)."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de défendre une opinion avec des raisons ?",
+    "options": [
+      "Recopier",
+      "Nommer",
+      "Résumer",
+      "Argumenter"
+    ],
+    "bonne_reponse": 3,
+    "explication": "Argumenter : défendre une idée avec des raisons et des exemples."
+  },
+  {
+    "course": "consignes",
+    "question": "Quelle consigne demande de donner un exemple pour montrer une idée ?",
+    "options": [
+      "Raturer",
+      "Illustrer",
+      "Surligner",
+      "Ignorer"
+    ],
+    "bonne_reponse": 1,
+    "explication": "Illustrer : appuyer une idée avec un exemple."
+  }
+]
