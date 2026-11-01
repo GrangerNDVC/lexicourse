@@ -10,8 +10,8 @@ Ouvrir `index.html` dans un navigateur (fichier unique, aucune installation).
 | Changer de voie | ← → ou clic sur une voie |
 | Se transformer (robot débloqué) | Espace ou bouton à l'écran |
 | Boost (jauge) | B ou Maj maintenu, ou bouton |
-| Changer de personnage (tests) | 1 à 4 |
-| Faire avancer la progression (tests) | N |
+| Choisir un personnage possédé | 1 à 8 |
+| Tests : tirer une carte / avancer la progression | K / N |
 
 ## Organisation du dépôt
 ```
@@ -19,14 +19,15 @@ index.html            jeu jouable (généré, ne pas modifier à la main)
 src/
   template.html       code du jeu (sans images ni questions)
   questions/          banques de questions (une par course) en JSON
+  audio/manifest.json événements du jeu → fichiers audio
   tools/build.py      assemble le jeu → index.html
 assets/
-  sources/            images brutes générées (personnages, décors, interface)
-  prompts/            prompts utilisés pour générer les images
+  sources/            images brutes (personnages, décors, interface) et audio (musique, bruitages)
+  prompts/            prompts utilisés (images, audio)
   teaser/             visuels de présentation du jeu
-docs/                 feuille de route, règles de jeu, journal de bord, captures
+docs/                 feuille de route, règles de jeu, journal de bord, inventaire audio, captures
 tests/                test rapide du jeu
-firebase/             (futur) règles et configuration
+firebase/             règles Firestore et configuration (voir firebase/README.md)
 archives/             prototype initial
 ```
 
@@ -46,8 +47,13 @@ python tests/smoke_test.py
 ## Ajouter des questions
 Éditer `src/questions/consignes.json` : consigne, 4 mots, `bonne_reponse` (numéro du bon mot en commençant à 0) et explication. Garder des mots courts (ils s'affichent sur le portique).
 
-## Ajouter un personnage
-Créer `assets/sources/personnages/<nom>/` avec : `fiche`, `saut`, `enjambement`, `transformation-dos` (fond vert uni #00FF00, une seule vue par image, sans texte), puis ajouter une ligne dans `PERSOS` de `src/tools/build.py`.
+## Ajouter un personnage ou une carte
+1. Ouvrir `outils/generateur-de-prompts.html` : il donne, étape par étape, le prompt, **l'image à joindre** et **le nom du fichier** à créer (planche 8 vues, transformation de dos, saut, enjambement, carte de face).
+2. Ranger les images dans `assets/sources/personnages/<nom>/` (`fiche`, `transformation-dos`, `saut`, `enjambement`, `carte`).
+3. Ajouter une entrée dans `src/personnages.json` (le générateur la fabrique) : nom, famille, couleur, **étoiles** (2 à 5, choisies par toi), **type** de carte, hauteur à l'écran, particularité. **Ajouter à la fin de la liste.** La carte est composée automatiquement (fond du type + vues de face de la planche) ; mets un `carte.png` dans le dossier pour la remplacer par une carte faite à la main.
+4. Lancer `python src/tools/build.py`.
+
+Les personnages d'une même **famille** (même modèle, couleurs différentes) sont regroupés dans le menu avec des pastilles de couleur. Les cartes 5★ ne se gagnent qu'avec un **sans-faute**.
 
 ## Conventions
 - **Versions** : numéro dans `CHANGELOG.md` et étiquette git (`git tag v0.6`), pas de copie du fichier.

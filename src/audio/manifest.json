@@ -1,0 +1,207 @@
+{
+  "_aide": "Relie chaque événement du jeu à son fichier. Fichier absent = silence (pas d'erreur). SFX : intégrés au jeu ; musique : chargée depuis assets/sources/audio/musique.",
+  "musique": {
+    "menu": {
+      "fichier": "musique_menu.mp3",
+      "quand": "écran titre et choix du personnage",
+      "boucle": true
+    },
+    "tutoriel": {
+      "fichier": "musique_tutoriel.mp3",
+      "quand": "tutoriel (route lente)",
+      "boucle": true
+    },
+    "piste1_calme": {
+      "fichier": "musique_piste1_calme.mp3",
+      "quand": "course piste 1, couche calme (route lente)",
+      "boucle": true
+    },
+    "piste1_moyen": {
+      "fichier": "musique_piste1_moyen.mp3",
+      "quand": "course piste 1, couche moyenne",
+      "boucle": true
+    },
+    "piste1_intense": {
+      "fichier": "musique_piste1_intense.mp3",
+      "quand": "course piste 1, couche intense (route rapide)",
+      "boucle": true
+    },
+    "sprint": {
+      "fichier": "musique_sprint.mp3",
+      "quand": "sprint final",
+      "boucle": true
+    },
+    "podium": {
+      "fichier": "musique_podium.mp3",
+      "quand": "podium (jingle)",
+      "boucle": false
+    },
+    "fin": {
+      "fichier": "musique_fin.mp3",
+      "quand": "fin de partie sans podium (jingle)",
+      "boucle": false
+    }
+  },
+  "sfx": {
+    "ui.clic": {
+      "fichier": "ui/sfx_ui_clic.mp3",
+      "quand": "clic sur un bouton",
+      "boucle": false
+    },
+    "ui.personnage": {
+      "fichier": "ui/sfx_ui_personnage.mp3",
+      "quand": "choix d'un personnage",
+      "boucle": false
+    },
+    "ui.verrouille": {
+      "fichier": "ui/sfx_ui_verrouille.mp3",
+      "quand": "bouton verrouillé (robot pas encore débloqué)",
+      "boucle": false
+    },
+    "course.decompte": {
+      "fichier": "course/sfx_course_decompte.mp3",
+      "quand": "bip du décompte 3-2-1",
+      "boucle": false
+    },
+    "course.depart": {
+      "fichier": "course/sfx_course_depart.mp3",
+      "quand": "signal de départ",
+      "boucle": false
+    },
+    "course.moteur-voiture": {
+      "fichier": "course/sfx_course_moteur-voiture.mp3",
+      "quand": "moteur en forme voiture (boucle, hauteur selon la vitesse)",
+      "boucle": true
+    },
+    "course.moteur-robot": {
+      "fichier": "course/sfx_course_moteur-robot.mp3",
+      "quand": "déplacement en forme robot (boucle)",
+      "boucle": true
+    },
+    "course.changement-voie": {
+      "fichier": "course/sfx_course_changement-voie.mp3",
+      "quand": "changement de voie",
+      "boucle": false
+    },
+    "course.tour": {
+      "fichier": "course/sfx_course_tour.mp3",
+      "quand": "passage de la ligne, nouveau tour",
+      "boucle": false
+    },
+    "course.depassement": {
+      "fichier": "course/sfx_course_depassement.mp3",
+      "quand": "on double un adversaire",
+      "boucle": false
+    },
+    "course.depasse": {
+      "fichier": "course/sfx_course_depasse.mp3",
+      "quand": "un adversaire nous double",
+      "boucle": false
+    },
+    "course.sprint": {
+      "fichier": "course/sfx_course_sprint.mp3",
+      "quand": "annonce du sprint final",
+      "boucle": false
+    },
+    "course.arrivee": {
+      "fichier": "course/sfx_course_arrivee.mp3",
+      "quand": "ligne d'arrivée",
+      "boucle": false
+    },
+    "questions.consigne": {
+      "fichier": "questions/sfx_questions_consigne.mp3",
+      "quand": "une nouvelle consigne apparaît",
+      "boucle": false
+    },
+    "questions.verrou": {
+      "fichier": "questions/sfx_questions_verrou.mp3",
+      "quand": "la voie (la réponse) est verrouillée",
+      "boucle": false
+    },
+    "questions.bonne": {
+      "fichier": "questions/sfx_questions_bonne.mp3",
+      "quand": "bonne réponse",
+      "boucle": false
+    },
+    "questions.mauvaise": {
+      "fichier": "questions/sfx_questions_mauvaise.mp3",
+      "quand": "mauvaise réponse (doux, pas humiliant)",
+      "boucle": false
+    },
+    "questions.bloc-disparait": {
+      "fichier": "questions/sfx_questions_bloc-disparait.mp3",
+      "quand": "le bloc de la bonne voie s'efface",
+      "boucle": false
+    },
+    "questions.collision": {
+      "fichier": "questions/sfx_questions_collision.mp3",
+      "quand": "collision avec un bloc",
+      "boucle": false
+    },
+    "questions.serie": {
+      "fichier": "questions/sfx_questions_serie.mp3",
+      "quand": "série de bonnes réponses",
+      "boucle": false
+    },
+    "formes.transformation-robot": {
+      "fichier": "formes/sfx_formes_transformation-robot.mp3",
+      "quand": "voiture vers robot",
+      "boucle": false
+    },
+    "formes.transformation-voiture": {
+      "fichier": "formes/sfx_formes_transformation-voiture.mp3",
+      "quand": "robot vers voiture",
+      "boucle": false
+    },
+    "formes.recharge": {
+      "fichier": "formes/sfx_formes_recharge.mp3",
+      "quand": "transformation de nouveau disponible",
+      "boucle": false
+    },
+    "formes.robot-debloque": {
+      "fichier": "formes/sfx_formes_robot-debloque.mp3",
+      "quand": "déblocage du robot",
+      "boucle": false
+    },
+    "formes.saut": {
+      "fichier": "formes/sfx_formes_saut.mp3",
+      "quand": "saut de la voiture",
+      "boucle": false
+    },
+    "formes.atterrissage": {
+      "fichier": "formes/sfx_formes_atterrissage.mp3",
+      "quand": "atterrissage de la voiture",
+      "boucle": false
+    },
+    "formes.enjambement": {
+      "fichier": "formes/sfx_formes_enjambement.mp3",
+      "quand": "enjambement du robot",
+      "boucle": false
+    },
+    "boost.debut": {
+      "fichier": "boost/sfx_boost_debut.mp3",
+      "quand": "activation du boost",
+      "boucle": false
+    },
+    "boost.boucle": {
+      "fichier": "boost/sfx_boost_boucle.mp3",
+      "quand": "boost en cours (boucle)",
+      "boucle": true
+    },
+    "boost.fin": {
+      "fichier": "boost/sfx_boost_fin.mp3",
+      "quand": "fin du boost",
+      "boucle": false
+    },
+    "boost.jauge-pleine": {
+      "fichier": "boost/sfx_boost_jauge-pleine.mp3",
+      "quand": "jauge de boost pleine",
+      "boucle": false
+    },
+    "ambiance.applaudissements": {
+      "fichier": "ambiance/sfx_ambiance_applaudissements.mp3",
+      "quand": "podium",
+      "boucle": false
+    }
+  }
+}

@@ -1,0 +1,13 @@
+[
+  {"id":"rouge","nom":"Rouge","dossier":"rouge","famille":"supercar","couleur":"#e03030","etoiles":3,"depart":true,"type":"feu","hauteur":230,"indices":[0,1,4,5,6,7],"particularite":"Départ canon : jauge de boost à 50 % au départ de la course"},
+  {"id":"jaune","nom":"Jaune","dossier":"jaune","famille":"coupe","couleur":"#e8c820","etoiles":3,"depart":true,"type":"electrique","hauteur":230,"indices":[0,1,2,3,5,6,7],"particularite":"Transformation éclair : recharge de 1 s au lieu de 3 s"},
+  {"id":"camion","nom":"Bleu (camion)","dossier":"camion","famille":"camion","couleur":"#2a5be0","etoiles":2,"type":"force","hauteur":290,"indices":null,"particularite":"Blindage : une erreur le ralentit moins"},
+  {"id":"moto","nom":"Noir (moto)","dossier":"moto","famille":"moto","couleur":"#333333","etoiles":4,"type":"tenebre","hauteur":250,"indices":null,"particularite":"Vif-argent : plus rapide, mais une erreur coûte plus cher"},
+  {"id":"moto-verte","carte":"main","nom":"Vert (moto)","dossier":"moto-verte","famille":"moto","couleur":"#2ecc40","etoiles":2,"type":"energie","hauteur":250,"sprites_de":"moto","particularite":"Recharge : la jauge de boost se remplit lentement"},
+  {"id":"citadine","nom":"Blanc (citadine)","dossier":"citadine","famille":"citadine","couleur":"#e8eef5","etoiles":2,"type":"glace","hauteur":220,"indices":null,"particularite":"Réflexion : la voie se verrouille plus tard"},
+  {"id":"f1","nom":"Cyan (formule 1)","dossier":"f1","famille":"f1","couleur":"#19c9c9","etoiles":4,"type":"eau","hauteur":240,"indices":null,"particularite":"Aspiration : le boost dure 50 % plus longtemps"},
+  {"id":"monster-truck","nom":"Violet (monster truck)","dossier":"monster-truck","famille":"monster","couleur":"#7a2fd0","etoiles":4,"type":"force","hauteur":300,"indices":null,"particularite":"Mastodonte : en robot, roule presque aussi vite qu'en voiture"},
+  {"id":"camping-car","nom":"Rose (camping-car)","dossier":"camping-car","famille":"camping-car","couleur":"#f48fb8","etoiles":3,"type":"love","hauteur":270,"indices":null,"particularite":"Atelier : surligne le mot-clé de la consigne"},
+  {"id":"berline","nom":"Noir (berline)","dossier":"berline","famille":"berline","couleur":"#26303a","etoiles":3,"type":"tenebre","hauteur":240,"indices":null,"particularite":"Chauffeur : le verrouillage de voie est plus tardif"},
+  {"id":"voiture-bleue","nom":"Bleu (citadine simple)","dossier":"voiture-bleue","famille":"voiture-simple","couleur":"#2a8bff","etoiles":2,"type":"eau","hauteur":220,"indices":null,"particularite":"Polyvalente : aucune particularité (modèle commun, à décliner en couleurs)"}
+]

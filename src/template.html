@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.5 — réponse verrouillée et blocs</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.9 — écran d'accueil, surprise du robot</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
 <canvas id="c" width="960" height="540"></canvas>
@@ -24,14 +24,48 @@ for(const[n,c,dy]of TRACK){for(let k=0;k<n;k++){const i=segs.length;
 const N=segs.length,LEN=N*SEG,SPR0=LEN*.8;   // SPR0 = début du sprint final (sans questions)
 
 // ===== ÉTAT =====
-let pos=0,x=LX[1],ln=1,v=0,lap=0,lapT=0,bgX=0,car=0,form=0,fps=60,score=0,ok=0,tot=0,qi=0,gauge=0,boosting=0,passed=0,robotOn=0,spOn=0,spT=0;
-let tr={t:0,dir:1},act={t:0,d:.8,k:'jump'},cool=0,boostT=0,slowT=0,shake=0,msg={t:'',life:0,ok:1},vis=[],btns=[],CH=[],OB={},BG;
+let pos=0,x=LX[1],ln=1,v=0,lap=0,lapT=0,bgX=0,car=0,form=0,fps=60,score=0,ok=0,tot=0,qi=0,paused=0,reveal=null,mode='home',code='',hb=0,surprise=null,HOME,res=null,pending=[],lapOk=0,lapTot=0,gauge=0,boosting=0,passed=0,robotOn=0,spOn=0,spT=0;
+let tr={t:0,dir:1},act={t:0,d:.8,k:'jump'},cool=0,boostT=0,slowT=0,shake=0,msg={t:'',life:0,ok:1},vis=[],btns=[],CH=[],FAM=[],pageM=0,colPage=0,detail=-1,OB={},BG;
 const gates=[];
-function newQ(gt){const q=Q[qi++%Q.length],o=[0,1,2,3];for(let i=3;i>0;i--){const j=rnd()*(i+1)|0;[o[i],o[j]]=[o[j],o[i]]}
+function newQ(gt){const q=Q[qi++%Q.length],o=[0,1,2,3];for(let i=3;i>0;i--){const j=Math.random()*(i+1)|0;[o[i],o[j]]=[o[j],o[i]]}
   Object.assign(gt,{q:q[0],w:o.map(i=>q[1][i]),c:o.indexOf(q[2]),e:q[3],t:pickT(),done:0,L:undefined})}
-const pickT=()=>{const a=robotOn?['barrier','blocks','ramp','pool']:['barrier','ramp'];return a[rnd()*a.length|0]};
-const newS=gt=>Object.assign(gt,{sp:1,c:rnd()*4|0,t:pickT(),done:0});
+const pickT=()=>{const a=robotOn?['barrier','blocks','ramp','pool']:['barrier','ramp'];return a[Math.random()*a.length|0]};
+const newS=gt=>Object.assign(gt,{sp:1,c:Math.random()*4|0,t:pickT(),done:0});
 const say=(t,o)=>msg={t,life:4.5,ok:o};
+
+// ===== PROFIL ET COLLECTION : sauvegarde dans le navigateur + Firebase si une configuration est fournie =====
+const SK='lexicourse_v1',WIN_PCT=.7,PITY=3;   // carte à la fin d'une course si ≥ 70 % de bonnes réponses (2 si sans-faute) ; carte garantie après 3 courses sans carte — règles provisoires
+const RV={depart:-1,commune:0,rare:1,epique:2,extra:3},RW=[6,3,1,0],RP=[0,4,3,2],RN=['Commune','Rare','Épique','Extra-rare'],RC=['#8fb8ff','#d78bff','#ffc23d','#ff6bd6'],rar=i=>RV[CH[i].rarete];   // la rareté de chaque carte est choisie dans src/personnages.json ; RW = tirage normal, RP = tirage « sans-faute » (seul moyen d'obtenir les extra-rares)
+let prof={owned:[],ok:0,tot:0,pseudo:'',classe:''},cloud=null;
+try{Object.assign(prof,JSON.parse(localStorage.getItem(SK)||'{}'))}catch(e){}
+function save(){prof.passed=passed;if(CH.length)prof.cartes=CH.filter((c,i)=>prof.owned[i]).map(c=>c.id);try{localStorage.setItem(SK,JSON.stringify(prof,(k,v)=>k=='owned'?undefined:v))}catch(e){}if(cloud)cloud.push()}
+const pool=T=>CH.map((c,i)=>i).filter(i=>!prof.owned[i]&&rar(i)>=0&&T[rar(i)]>0);
+function draw(perfect){let T=perfect?RP:RW,l=pool(T);if(!l.length){T=RW;l=pool(T)}
+  if(!l.length&&!perfect&&pool(RP).length){say('Il reste des cartes rares : elles se gagnent avec un sans-faute !',1);return false}
+  if(!l.length){say('Collection complète ! Bravo !',1);return false}
+  let t=l.reduce((a,i)=>a+T[rar(i)],0)*Math.random(),k=l[0];for(const i of l){t-=T[rar(i)];if(t<=0){k=i;break}}
+  prof.owned[k]=1;save();reveal={i:k,t:0};return true}
+const STC={1:'#8fb8ff',2:'#8fb8ff',3:'#d78bff',4:'#ffc23d',5:'#ff6bd6'},TN={feu:'Feu',electrique:'Électrique',energie:'Énergie',eau:'Eau',force:'Force',glace:'Glace',love:'Amour',nature:'Nature',tenebre:'Ténèbre'};
+function drawCard(c,x,y,w,h,own){g.save();g.textAlign='left';g.beginPath();g.roundRect(x,y,w,h,w*.06);g.clip();
+  if(own&&c.cardImg){g.drawImage(prof.robot?c.cardImg:(c.cardCarImg||c.cardImg),x,y,w,h);const f=h*.07,sx=x+w*.06,sy=y+h*.03;g.font='bold '+f+'px system-ui';g.textBaseline='top';g.lineWidth=f*.14;g.strokeStyle='#000';g.fillStyle='#ffc23d';const st='★'.repeat(c.etoiles);g.strokeText(st,sx,sy);g.fillText(st,sx,sy);g.textBaseline='alphabetic';   // étoiles en haut à gauche
+    const gr=g.createLinearGradient(0,y+h*.83,0,y+h);gr.addColorStop(0,'rgba(2,6,25,0)');gr.addColorStop(1,'rgba(2,6,25,.93)');g.fillStyle=gr;g.fillRect(x,y+h*.83,w,h*.17);
+    g.fillStyle='#fff';g.textAlign='center';let fs=h*.046;g.font='bold '+fs+'px system-ui';while(g.measureText(c.label).width>w*.9&&fs>6){fs--;g.font='bold '+fs+'px system-ui'}g.fillText(c.label,x+w/2,y+h*.955);g.textAlign='left'}   // nom en bas
+  else{g.fillStyle='#161a33';g.fillRect(x,y,w,h);g.fillStyle='#3a4160';g.textAlign='center';g.font='bold '+h*.3+'px system-ui';g.fillText('?',x+w/2,y+h*.62);g.textAlign='left'}
+  g.restore();g.strokeStyle=own?(STC[c.etoiles]||'#fff'):'#2a2f45';g.lineWidth=Math.max(2,w*.02);g.beginPath();g.roundRect(x,y,w,h,w*.06);g.stroke()}
+function card(){const c=CH[reveal.i],u=Math.min(1,reveal.t/.6);g.fillStyle='rgba(3,6,25,.9)';g.fillRect(0,0,W,H);g.textAlign='center';
+  g.fillStyle=STC[c.etoiles]||'#fff';g.font='bold 24px system-ui';g.fillText('NOUVELLE CARTE !',W/2,34);g.save();g.translate(W/2,H/2+4);g.scale(.4+.6*u,.4+.6*u);g.globalAlpha=u;drawCard(c,-150,-225,300,450,1);g.restore();
+  g.fillStyle='#fff';g.font='15px system-ui';g.fillText((TN[c.type]||'')+'  ·  '+c.part,W/2,H-24);
+  if(reveal.t>1.2){g.fillStyle='#9fe8ff';g.font='14px system-ui';g.fillText('Clique ou appuie sur une touche pour continuer',W/2,H-6)}g.textAlign='left'}
+async function initCloud(){const cfg=A.firebase;if(!cfg)return;
+  try{const B='https://www.gstatic.com/firebasejs/10.12.2/',[{initializeApp},{getAuth,signInAnonymously},{getFirestore,doc,getDoc,setDoc,serverTimestamp}]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+    const app=initializeApp(cfg),au=getAuth(app),ref=doc(getFirestore(app),'lexicourse_joueurs',(await signInAnonymously(au)).user.uid),snap=await getDoc(ref);
+    if(snap.exists()){const d=snap.data(),c=d.cartes||[];prof.owned=CH.map((x,i)=>prof.owned[i]||c.includes(x.id)?1:0);prof.ok=Math.max(prof.ok,d.ok||0);prof.tot=Math.max(prof.tot,d.tot||0);prof.pseudo=prof.pseudo||d.pseudo||'';prof.classe=prof.classe||d.classe||''}
+    cloud={push:()=>setDoc(ref,{pseudo:prof.pseudo,classe:prof.classe,cartes:CH.filter((x,i)=>prof.owned[i]).map(x=>x.id),ok:prof.ok,tot:prof.tot,maj:serverTimestamp()},{merge:true}).catch(()=>{})};cloud.push()}
+  catch(e){console.warn('Firebase indisponible : sauvegarde locale uniquement',e)}}
+function askIdentity(){if(!A.firebase||prof.pseudo)return;paused=1;const d=document.createElement('div');
+  d.style.cssText='position:fixed;inset:0;background:rgba(3,6,25,.94);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#fff;z-index:9';
+  d.innerHTML='<div style="background:#0b1038;border:3px solid #22e6ff;border-radius:18px;padding:28px;width:min(92vw,420px)"><h2 style="margin:0 0 6px">Ton profil de pilote</h2><p style="margin:0 0 16px;color:#9fe8ff;font-size:14px">Choisis un pseudo <b>sans ton vrai nom</b>. Tes cartes seront sauvegardées.</p><input id="ps" maxlength="16" placeholder="Pseudo" style="width:100%;box-sizing:border-box;padding:10px;font-size:18px;border-radius:8px;border:0;margin-bottom:10px"><input id="cl" maxlength="12" placeholder="Code de classe (donné par le professeur)" style="width:100%;box-sizing:border-box;padding:10px;font-size:16px;border-radius:8px;border:0;margin-bottom:16px"><button id="go" style="width:100%;padding:12px;font-size:18px;font-weight:bold;border:0;border-radius:10px;background:#22e6ff;cursor:pointer">Jouer</button></div>';
+  document.body.appendChild(d);d.querySelector('#go').onclick=()=>{const p=d.querySelector('#ps').value.trim();if(p.length<2){d.querySelector('#ps').focus();return}prof.pseudo=p;prof.classe=d.querySelector('#cl').value.trim();save();d.remove();paused=0}}
 
 // ===== CHARGEMENT =====
 const load=u=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=u});
@@ -39,7 +73,8 @@ async function init(){
   BG=await load(A.bg);
   for(const o of A.roadside){o.img=await load(o.u);o.ww=o.hh*o.img.width/o.img.height}
   for(const o of A.obst){o.img=await load(o.u);OB[o.n]=o}
-  for(const c of A.chars){for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load))}CH=A.chars;
+  for(const c of A.chars){for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load));if(c.card)c.cardImg=await load(c.card);if(c.cardCar)c.cardCarImg=await load(c.cardCar)}CH=A.chars;HOME=await load(A.home);const OLD=['rouge','jaune','camion','moto','citadine','f1','monster-truck','camping-car'];if(!prof.cartes)prof.cartes=OLD.filter((id,i)=>(prof.owned||[])[i]);   // reprise des anciennes sauvegardes
+  prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
   const by=n=>A.roadside.filter(o=>o.n.startsWith(n)),pool=['pylon','lamp','billboard','house','tree','tree','light'];
   for(let i=8;i<N;i+=8)for(const side of[-1,1]){const l=by(pool[rnd()*pool.length|0]);segs[i].spr.push({o:l[rnd()*l.length|0],off:side*(1.35+rnd()*1.3)})}
   for(let i=0;i<N;i+=5){const s=segs[i];
@@ -47,43 +82,104 @@ async function init(){
     else if(i%40==0)s.spr.push({o:by('barrier')[0],off:(i%80?-1:1)*1.12})}
   for(let z=GATE0;z<SPR0-12000;z+=EVERY){const gt={z};newQ(gt);gates.push(gt);segs[z/SEG|0].gate=gt}
   for(let z=SPR0;z<LEN-3000;z+=6000){const gt={z};newS(gt);gates.push(gt);segs[z/SEG|0].gate=gt}   // sprint final : rangées d’obstacles sans question
-  say('Au début la route est lente : place-toi sur la voie du bon mot. Le bloc ne disparaît que sur la bonne réponse !',1);msg.life=8;
-  requestAnimationFrame(loop)}
+
+  requestAnimationFrame(loop);initCloud().then(askIdentity)}
 
 // ===== ACTIONS (clavier, souris et plus tard tactile appellent les mêmes fonctions) =====
 const clampL=l=>Math.max(0,Math.min(3,l)),lk=()=>gates.some(t=>!t.sp&&!t.done&&t.L!==undefined),setLn=l=>{if(!lk())ln=clampL(l)};
 function toggle(){if(!robotOn){say('Le robot se débloque en progressant : réponds aux consignes !',1);return}if(tr.t>0||cool>0||act.t>0)return;form^=1;tr={t:TR,dir:form?1:-1};cool=TR+COOL}
 function startAct(){if(act.t<=0&&tr.t<=0)act={t:.8,d:.8,k:form?'step':'jump'}}
-function pick(i){car=i;form=0;tr.t=0;act.t=0;cool=0}
-const chk=()=>{if(!robotOn&&passed>=UNLOCK){robotOn=1;say('Robot débloqué ! Il ralentit pour mieux lire et enjambe les gros obstacles (Espace)',1)}};
-addEventListener('keydown',e=>{const k=e.key;if([' ','ArrowUp','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();if(e.repeat)return;
+function pick(i){if(mode!='menu')return;if(!prof.owned[i]){say('Carte à gagner au hasard après une course réussie !',0);return}car=i}
+const chk=()=>{if(!robotOn&&passed>=UNLOCK){robotOn=1;prof.robot=1;save();surprise={t:0};say('Robot débloqué ! Il ralentit pour mieux lire et enjambe les gros obstacles (Espace)',1)}};   // provisoire : plus tard, le robot se découvre en battant l'autre voiture du tutoriel
+addEventListener('keydown',e=>{const k=e.key;if(e.target.tagName=='INPUT')return;if(e.repeat)return;if(surprise){if(surprise.t>2.4)surprise=null;return}if(reveal){if(reveal.t>1.2)closeReveal();return}if(mode=='home'){if(/^[0-9]$/.test(k)&&code.length<4)code+=k;else if(k=='Backspace')code=code.slice(0,-1);else if(k=='Enter'){if(code.length==4)say('La connexion par code arrive bientôt : joue en invité pour le moment !',1);else mode='menu'}return}if(mode=='menu'){if(k=='Escape')mode='home';if(k=='Enter'||k==' ')startRace();if(k=='ArrowRight')pageM=Math.min(pageM+1,Math.ceil(FAM.length/8)-1);if(k=='ArrowLeft')pageM=Math.max(0,pageM-1);if('12345678'.includes(k)){const f=FAM[pageM*8+ +k-1];if(f)pickFam(f)}if(k=='k')draw(0);if(k=='p')draw(1);return}if(mode=='collection'){if(detail>=0)detail=-1;else if(k=='ArrowRight')colPage++;else if(k=='ArrowLeft')colPage=Math.max(0,colPage-1);else if(k=='Escape'||k=='Enter')mode='menu';return}if(mode=='result'){if(k=='Enter'||k==' ')nextReward();return}if([' ','ArrowUp','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();if(e.repeat)return;
   if(k=='ArrowLeft'||k=='q'||k=='a')setLn(ln-1);if(k=='ArrowRight'||k=='d')setLn(ln+1);
-  if(k==' ')toggle();if(k=='ArrowUp')startAct();if(k=='b'||k=='Shift')boosting=1;if(k=='n'){passed+=3;chk()}if('1234'.includes(k))pick(+k-1)});
+  if(k==' ')toggle();if(k=='ArrowUp')startAct();if(k=='b'||k=='Shift')boosting=1;if(k=='n'){passed+=3;chk()}});
 addEventListener('keyup',e=>{if(e.key=='b'||e.key=='Shift')boosting=0});addEventListener('pointerup',()=>boosting=0);
-cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,py=(e.clientY-r.top)*H/r.height;
-  for(const b of btns)if(px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h){b.f();return}
+cv.addEventListener('pointerdown',e=>{if(surprise){if(surprise.t>2.4)surprise=null;return}if(reveal){if(reveal.t>1.2)closeReveal();return}const r=cv.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,py=(e.clientY-r.top)*H/r.height;
+  if(mode=='collection'&&detail>=0){detail=-1;return}for(const b of btns)if(px>=b.x&&px<=b.x+b.w&&py>=b.y&&py<=b.y+b.h){b.f();return}
+  if(mode!='race')return;
   for(const s of vis)if(py>=s.b.sy&&py<=s.a.sy){const l=Math.floor((px-(s.a.sx-s.a.sw))/(2*s.a.sw)*LANES);if(l>=0&&l<LANES){setLn(l);return}break}
   setLn(ln+(px<W/2?-1:1))});
+
+// ===== DÉROULEMENT : menu (choix du pilote) → course → résultats → carte éventuelle → menu =====
+function startRace(){pos=0;x=LX[1];ln=1;v=0;lapT=0;spOn=0;spT=0;form=0;tr.t=0;act.t=0;cool=0;boosting=0;gauge=0;slowT=0;lapOk=0;lapTot=0;gates.forEach(t=>t.sp?newS(t):newQ(t));
+  say('Place-toi sur la voie du bon mot. Le bloc ne disparaît que sur la bonne réponse !',1);mode='race'}
+function endRace(){const acc=lapTot?lapOk/lapTot:0,perfect=lapTot>=3&&acc==1;pending=[];if(lapTot>=3&&acc>=WIN_PCT)pending.push(0);if(perfect)pending.push(1);
+  prof.dry=(prof.dry|0)+1;if(!pending.length&&prof.dry>=PITY&&lapTot>=3)pending.push(0);if(pending.length)prof.dry=0;prof.races=(prof.races|0)+1;
+  res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect};mode='result';spOn=0;boosting=0;save()}
+function nextReward(){while(pending.length){if(draw(pending.shift()))return}mode='menu';v=0}
+function closeReveal(){reveal=null;if(mode=='result')nextReward()}
+function btn(x1,y1,w,h,t,f,c){btns.push({x:x1,y:y1,w,h,f});g.fillStyle=c||'#22e6ff';g.beginPath();g.roundRect(x1,y1,w,h,14);g.fill();g.fillStyle='#021';g.font='bold 24px system-ui';g.textAlign='center';g.fillText(t,x1+w/2,y1+h/2+8)}
+const famCur=f=>f.v.includes(car)?car:f.v.find(i=>prof.owned[i]);
+function pickFam(f){const c=famCur(f);if(c===undefined)say('Carte à gagner au hasard après une course réussie !',0);else pick(c)}
+function menu(){g.fillStyle='rgba(3,6,25,.86)';g.fillRect(0,0,W,H);g.textAlign='center';
+  g.fillStyle='#22e6ff';g.font='bold 44px system-ui';g.fillText('LEXICOURSE',W/2,52);g.fillStyle='#9fe8ff';g.font='16px system-ui';g.fillText('Choisis ton pilote, puis lance la course'+(prof.pseudo?'  ·  '+prof.pseudo:''),W/2,78);
+  btns=[];const np=Math.max(1,Math.ceil(FAM.length/8));pageM=Math.min(pageM,np-1);
+  FAM.slice(pageM*8,pageM*8+8).forEach((f,n)=>{const x0=62+(n%4)*212,y0=106+(n>>2)*182,cur=famCur(f),any=cur!==undefined,sel=f.v.includes(car);
+    f.v.forEach((i,j)=>btns.push({x:x0+100-(f.v.length-1)*11+j*22-11,y:y0+125,w:22,h:22,f:()=>pick(i)}));btns.push({x:x0,y:y0,w:200,h:170,f:()=>pickFam(f)});
+    const r=any?rar(cur):0;g.fillStyle=any?'#0b1038':'#1a1f38';g.strokeStyle=sel?'#fff':(any?RC[Math.max(0,r)]:'#2a2f45');g.lineWidth=sel?5:3;g.beginPath();g.roundRect(x0,y0,200,170,16);g.fill();g.stroke();
+    if(any){const c=CH[cur],im=prof.robot?c.tr[c.tr.length-1]:c.tr[0],k=Math.min(92/im.height,150/im.width);g.drawImage(im,x0+100-im.width*k/2,y0+8,im.width*k,im.height*k);g.fillStyle='#fff';g.font='bold 14px system-ui';g.fillText(c.label,x0+100,y0+118);
+      g.fillStyle=RC[Math.max(0,r)];g.font='13px system-ui';g.fillText('★'.repeat(c.etoiles)+(r<0?'  départ':''),x0+100,y0+160)}
+    else{g.fillStyle='#3a4160';g.font='bold 60px system-ui';g.fillText('?',x0+100,y0+80);g.font='13px system-ui';g.fillText('Carte à gagner',x0+100,y0+160)}
+    if(f.v.length>1||any)f.v.forEach((i,j)=>{const cx=x0+100-(f.v.length-1)*11+j*22,cy=y0+136;g.fillStyle=prof.owned[i]?CH[i].couleur:'#2a2f45';g.beginPath();g.arc(cx,cy,8,0,7);g.fill();g.strokeStyle=i==car?'#fff':'#0b1038';g.lineWidth=i==car?3:1.5;g.stroke()})});
+  if(np>1){btns.push({x:12,y:230,w:34,h:70,f:()=>pageM=Math.max(0,pageM-1)},{x:W-46,y:230,w:34,h:70,f:()=>pageM=Math.min(np-1,pageM+1)});g.fillStyle='#22e6ff';g.font='bold 40px system-ui';g.fillText('‹',29,278);g.fillText('›',W-29,278);g.font='13px system-ui';g.fillStyle='#9fe8ff';g.fillText('Page '+(pageM+1)+'/'+np,W/2+190,H-30)}
+  if(CH[car].part){g.fillStyle='#ffc23d';g.font='13px system-ui';g.fillText('Particularité : '+CH[car].part,W/2,H-70)}
+  btn(W/2-120,H-62,240,46,'COURSE',startRace);btn(20,H-62,190,46,'COLLECTION',()=>{mode='collection';colPage=0;detail=-1},'#ffc23d');
+  g.textAlign='left';g.fillStyle='#9fe8ff';g.font='13px system-ui';g.fillText('Cartes '+prof.owned.reduce((a,b)=>a+b,0)+'/'+CH.length,20,H-4);
+  if(msg.life>0){g.textAlign='center';g.fillStyle=msg.ok?'#7dffb0':'#ff8a9a';g.font='bold 15px system-ui';g.fillText(msg.t,W/2,98)}g.textAlign='left'}
+function collection(){g.fillStyle='rgba(3,6,25,.94)';g.fillRect(0,0,W,H);g.textAlign='center';g.fillStyle='#ffc23d';g.font='bold 36px system-ui';g.fillText('MA COLLECTION',W/2,44);
+  g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText(prof.owned.reduce((a,b)=>a+b,0)+' cartes sur '+CH.length+' · clique sur une carte pour la voir en grand',W/2,68);btns=[];
+  const per=12,np=Math.max(1,Math.ceil(CH.length/per));colPage=Math.min(colPage,np-1);
+  CH.slice(colPage*per,colPage*per+per).forEach((c,n)=>{const i=colPage*per+n,x0=45+(n%6)*150,y0=84+(n/6|0)*198,o=prof.owned[i];btns.push({x:x0,y:y0,w:120,h:180,f:()=>o?detail=i:say('Carte à gagner après une course réussie !',0)});drawCard(c,x0,y0,120,180,o)});
+  if(np>1){btns.push({x:12,y:200,w:30,h:70,f:()=>colPage=Math.max(0,colPage-1)},{x:W-42,y:200,w:30,h:70,f:()=>colPage=Math.min(np-1,colPage+1)});g.fillStyle='#22e6ff';g.font='bold 40px system-ui';g.fillText('‹',27,250);g.fillText('›',W-27,250);g.font='13px system-ui';g.fillText('Page '+(colPage+1)+'/'+np,W/2+190,H-26)}
+  btn(W/2-100,H-60,200,44,'RETOUR',()=>mode='menu');
+  if(msg.life>0){g.fillStyle=msg.ok?'#7dffb0':'#ff8a9a';g.font='bold 15px system-ui';g.fillText(msg.t,W/2,H-70)}
+  if(detail>=0){const c=CH[detail];g.fillStyle='rgba(3,6,25,.95)';g.fillRect(0,0,W,H);drawCard(c,60,40,330,495-40,1);g.textAlign='left';g.fillStyle='#fff';g.font='bold 34px system-ui';g.fillText(c.label,430,100);
+    g.fillStyle=STC[c.etoiles]||'#fff';g.font='bold 28px system-ui';g.fillText('★'.repeat(c.etoiles),430,145);g.fillStyle='#9fe8ff';g.font='20px system-ui';g.fillText('Type : '+(TN[c.type]||c.type),430,190);
+    g.fillStyle='#ffc23d';g.font='bold 20px system-ui';g.fillText('Particularité',430,245);g.fillStyle='#fff';g.font='20px system-ui';wrap(c.part||'—',480).forEach((t,i)=>g.fillText(t,430,278+i*28));
+    g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText('Clique pour fermer',430,H-30)}g.textAlign='left'}
+function surpriseScreen(){const t=surprise.t,c=CH[car],u=Math.max(0,Math.min(1,(t-.8)/2)),n=c.tr.length,im=c.tr[Math.min(n-1,Math.floor(u*n))],f=Math.min(1,t/.4);
+  g.fillStyle='rgba(3,6,25,'+(.9*f)+')';g.fillRect(0,0,W,H);if(t<.5){g.fillStyle='rgba(255,255,255,'+(.8*(1-t/.5))+')';g.fillRect(0,0,W,H)}
+  g.textAlign='center';g.shadowColor='#22e6ff';g.shadowBlur=30;g.fillStyle='#fff';g.font='bold 56px system-ui';g.fillText('SURPRISE !',W/2,86);g.shadowBlur=0;
+  g.fillStyle='#ffc23d';g.font='bold 24px system-ui';g.fillText('Ton véhicule cache un robot !',W/2,124);
+  const k=Math.min(300/im.height,420/im.width);g.drawImage(im,W/2-im.width*k/2,150+(300-im.height*k),im.width*k,im.height*k);
+  g.fillStyle='#9fe8ff';g.font='18px system-ui';g.fillText('Appuie sur ESPACE pour te transformer (voiture ⇄ robot)',W/2,H-50);if(t>2.4){g.font='14px system-ui';g.fillText('Clique ou appuie sur une touche pour continuer',W/2,H-24)}g.textAlign='left'}
+function home(){hb+=1/60;const k=1.02+.02*Math.sin(hb*.5);g.save();g.translate(W/2,H/2);g.scale(k,k);g.drawImage(HOME,-W/2,-H/2,W,H);g.restore();
+  const gr=g.createLinearGradient(0,0,0,300);gr.addColorStop(0,'rgba(3,6,25,.82)');gr.addColorStop(1,'rgba(3,6,25,0)');g.fillStyle=gr;g.fillRect(0,0,W,300);btns=[];g.textAlign='center';
+  g.shadowColor='#22e6ff';g.shadowBlur=22+8*Math.sin(hb*2);g.fillStyle='#fff';g.font='bold 62px system-ui';g.fillText('LEXICOURSE',W/2,72);g.shadowBlur=0;
+  g.fillStyle='#9fe8ff';g.font='16px system-ui';g.fillText('Course, transformations… et consignes à décoder !',W/2,98);
+  g.fillStyle='#fff';g.font='bold 14px system-ui';g.fillText('Ton code à 4 chiffres',W/2,132);
+  for(let i=0;i<4;i++){const x0=W/2-100+i*52;g.fillStyle='rgba(5,12,40,.88)';g.strokeStyle=i==code.length?'#22e6ff':'#2a3f6b';g.lineWidth=3;g.beginPath();g.roundRect(x0,142,44,54,10);g.fill();g.stroke();g.fillStyle='#fff';g.font='bold 30px system-ui';g.fillText(code[i]||'',x0+22,182)}
+  g.fillStyle='#3a4160';g.beginPath();g.roundRect(W/2-215,208,200,42,12);g.fill();g.fillStyle='#9aa3c7';g.font='bold 17px system-ui';g.fillText('SE CONNECTER',W/2-115,235);btns.push({x:W/2-215,y:208,w:200,h:42,f:()=>say('La connexion par code arrive bientôt : joue en invité pour le moment !',1)});
+  g.fillStyle='#22e6ff';g.beginPath();g.roundRect(W/2+15,208,200,42,12);g.fill();g.fillStyle='#021';g.font='bold 17px system-ui';g.fillText('JOUER EN INVITÉ',W/2+115,235);btns.push({x:W/2+15,y:208,w:200,h:42,f:()=>mode='menu'});
+  if(msg.life>0){g.fillStyle='#7dffb0';g.font='bold 15px system-ui';g.fillText(msg.t,W/2,274)}else{g.fillStyle='rgba(159,232,255,'+(.55+.45*Math.sin(hb*3))+')';g.font='14px system-ui';g.fillText('Entrée = jouer en invité',W/2,274)}g.textAlign='left'}
+function resultScreen(){g.fillStyle='rgba(3,6,25,.92)';g.fillRect(0,0,W,H);g.textAlign='center';btns=[];
+  g.fillStyle='#22e6ff';g.font='bold 42px system-ui';g.fillText('Course terminée !',W/2,110);g.fillStyle='#fff';g.font='bold 26px system-ui';
+  g.fillText(res.ok+' bonnes réponses sur '+res.tot+' ('+Math.round(res.acc*100)+' %)',W/2,180);g.fillText('Sprint final : '+res.sp.toFixed(1)+' s  ·  temps total : '+res.t.toFixed(1)+' s',W/2,224);
+  g.font='bold 24px system-ui';g.fillStyle=res.cards?'#ffc23d':'#9fe8ff';
+  g.fillText(res.perfect?'SANS-FAUTE ! 2 cartes à découvrir, avec une chance d\'extra-rare !':res.cards?'Récompense : '+res.cards+' carte'+(res.cards>1?'s':'')+' à découvrir !':'Pas de carte cette fois : vise '+Math.round(WIN_PCT*100)+' % de bonnes réponses.',W/2,292);
+  if(!res.cards){g.font='16px system-ui';g.fillStyle='#9fe8ff';g.fillText('Carte garantie dans '+Math.max(1,PITY-(prof.dry|0))+' course(s) au maximum.',W/2,324)}
+  btn(W/2-120,400,240,50,res.cards?'OUVRIR':'CONTINUER',nextReward);g.textAlign='left'}
 
 // ===== MISE À JOUR (60 calculs par seconde) =====
 function hit(gt){gt.done=1;const L=gt.L!==undefined?gt.L:clampL(Math.round((x+.75)/.5)),ideal=(gt.t=='barrier'||gt.t=='ramp')?0:1;
   if(gt.sp){if(L==gt.c)return;if(boosting&&gauge>0&&form==ideal){startAct();score+=5;return}v*=.5;shake=.35;say('Obstacle ! Prends la voie libre, ou boost + bonne forme',0);return}
-  tot++;passed++;
-  if(L==gt.c){ok++;score+=10;
+  tot++;prof.tot++;passed++;lapTot++;
+  if(L==gt.c){ok++;prof.ok++;lapOk++;score+=10;
     if(form==ideal){gauge=Math.min(100,gauge+50);startAct();say('Bonne réponse ! '+(form?'Enjambement':'Saut')+' réussi : jauge de boost +50',1)}
     else{gauge=Math.min(100,gauge+25);slowT=1.5;say('Bonne réponse (+25), mais pas la bonne forme : tu passes en forçant',1)}}
   else{v*=.45;shake=.4;say('Raté ! '+gt.e,0)}
-  chk()}
-function update(dt){
+  chk();save()}
+function update(dt){if(paused)return;msg.life=Math.max(0,msg.life-dt);if(surprise){surprise.t+=dt;return}if(reveal){reveal.t+=dt;return}if(mode!='race')return;
   const s=segs[pos/SEG|0],road=MAXV*Math.min(1,.3+.07*passed),vmax=road*(form?ROBOT:1)*(boosting&&gauge>0?BOOST:1)*(slowT>0?.6:1);if(boosting&&gauge>0)gauge=Math.max(0,gauge-DRAIN*dt);
   x+=(LX[ln]-x)*Math.min(1,dt*9);
   v+=Math.sign(vmax-v)*Math.min(Math.abs(vmax-v),ACC*dt*(v>vmax?2:1));
   for(const gt of gates)if(!gt.sp&&!gt.done&&gt.L===undefined&&pos>=gt.z-LOCK){gt.L=clampL(Math.round((x+.75)/.5));ln=gt.L}   // verrouillage de la réponse
   const p0=pos;pos+=v*dt;lapT+=dt;for(const gt of gates)if(!gt.done&&p0<gt.z&&pos>=gt.z)hit(gt);
   if(pos>=SPR0){if(!spOn){spOn=1;spT=0;say('SPRINT FINAL : plus de questions ! Vide ta jauge de boost : en boost, la bonne forme franchit tous les obstacles',1)}spT+=dt}
-  if(pos>=LEN){if(spOn){say('Sprint final terminé en '+spT.toFixed(1)+' s',1);spOn=0}pos-=LEN;lap++;lapT=0;gates.forEach(t=>t.sp?newS(t):newQ(t))}
+  if(pos>=LEN){endRace();return}
   bgX+=s.curve*(v/MAXV)*dt*60;
-  tr.t=Math.max(0,tr.t-dt);act.t=Math.max(0,act.t-dt);cool=Math.max(0,cool-dt);slowT=Math.max(0,slowT-dt);shake=Math.max(0,shake-dt);msg.life=Math.max(0,msg.life-dt)}
+  tr.t=Math.max(0,tr.t-dt);act.t=Math.max(0,act.t-dt);cool=Math.max(0,cool-dt);slowT=Math.max(0,slowT-dt);shake=Math.max(0,shake-dt)}
 
 // ===== RENDU =====
 function quad(x1,y1,x2,y2,x3,y3,x4,y4,c){g.fillStyle=c;g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.lineTo(x3,y3);g.lineTo(x4,y4);g.closePath();g.fill()}
@@ -122,13 +218,12 @@ function hud(){
   g.font='bold 18px system-ui,sans-serif';g.fillStyle='#fff';g.fillText(Math.round(v/MAXV*260)+' km/h · '+(form?'ROBOT':'VOITURE')+(boosting&&gauge>0?' · BOOST':''),20,H-76);
   g.fillText('Tour '+(lap+1)+' · '+lapT.toFixed(1)+' s · score '+score+' ('+ok+'/'+tot+')',20,H-54);
   g.font='13px system-ui,sans-serif';g.fillStyle='#9fe8ff';g.fillText(Math.round(fps)+' images/s · '+CH[car].label,20,H-34);
-  g.fillText('← → ou clic sur une voie · Espace = transformer · B ou Maj (maintenu) = boost · 1-4 = personnage · N = test progression',20,H-8);
+  g.fillText('← → ou clic sur une voie · Espace = transformer · B ou Maj (maintenu) = boost',20,H-8);
   const ng=gates.find(t=>!t.sp&&!t.done&&t.z>pos&&t.z-pos<SHOW);let ey=12;
   if(ng){g.font='bold 27px system-ui,sans-serif';const L=wrap(ng.q,770),bh=18+L.length*34;box(W/2-400,10,800,bh,'rgba(5,12,40,.9)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,44+i*34));
     g.font='bold 24px system-ui,sans-serif';ng.w.forEach((w,i)=>{const cx=W/2-400+i*200;box(cx,bh+16,192,44,i==ln?(lk()?'#c8720e':'#0e7fb8'):'rgba(5,12,40,.9)');g.fillStyle='#fff';g.fillText(w,cx+96,bh+46)});g.textAlign='left';ey=bh+68}
   if(msg.life>0){g.font='bold 17px system-ui,sans-serif';const L=wrap(msg.t,740),y=ey;box(W/2-390,y,780,14+L.length*24,msg.ok?'rgba(10,110,60,.92)':'rgba(150,25,40,.92)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,y+26+i*24));g.textAlign='left'}
-  btns=[];const cols=['#e03030','#e8c820','#2a5be0','#333'];
-  cols.forEach((c,i)=>{const b={x:W-196+i*46,y:H-60,w:40,h:40,f:()=>pick(i)};btns.push(b);box(b.x,b.y,40,40,c);if(i==car){g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.roundRect(b.x,b.y,40,40,10);g.stroke()}g.fillStyle=i==1?'#000':'#fff';g.font='bold 18px system-ui';g.fillText(i+1,b.x+14,b.y+27)});
+  btns=[];g.font='13px system-ui,sans-serif';g.fillStyle='#9fe8ff';g.textAlign='right';g.fillText(CH[car].label+'  ·  cartes '+prof.owned.reduce((a,b)=>a+b,0)+'/'+CH.length,W-20,22);g.textAlign='left';
   const bx=W-86,by=H-190,ready=robotOn&&cool<=0&&act.t<=0;btns.push({x:bx-46,y:by-46,w:92,h:92,f:toggle});
   g.fillStyle=ready?'rgba(5,40,70,.9)':'rgba(40,40,50,.85)';g.beginPath();g.arc(bx,by,46,0,7);g.fill();g.strokeStyle=ready?'#22e6ff':'#667';g.lineWidth=4;g.stroke();
   if(!ready&&cool>0){g.strokeStyle='#22e6ff';g.beginPath();g.arc(bx,by,40,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-cool/(TR+COOL)));g.stroke()}
@@ -152,7 +247,7 @@ function render(){
       if(cl<h&&s.a.cz>DEPTH){const sh=o.img.height*(1-cl/h);g.globalAlpha=1-s.fog;
         if(q.flip){g.save();g.translate(sx+w,sy);g.scale(-1,1);g.drawImage(o.img,0,0,o.img.width,sh,0,0,w,h-cl);g.restore()}else g.drawImage(o.img,0,0,o.img.width,sh,sx,sy,w,h-cl);g.globalAlpha=1}}
     if(s.gate&&s.a.cz>DEPTH)gate(s)}
-  player();g.restore();hud()}
+  player();g.restore();if(mode=='race')hud();else if(mode=='home')home();else if(mode=='menu')menu();else if(mode=='collection')collection();else resultScreen();if(reveal)card();if(surprise)surpriseScreen()}
 
 let last=performance.now(),acc=0;
 function loop(t){const f=Math.min(.25,(t-last)/1000);last=t;acc+=f;fps+=(1/Math.max(f,.001)-fps)*.05;while(acc>=1/60){update(1/60);acc-=1/60}render();requestAnimationFrame(loop)}

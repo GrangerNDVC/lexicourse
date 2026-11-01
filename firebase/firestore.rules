@@ -1,0 +1,10 @@
+// À AJOUTER aux règles Firestore existantes (dans le bloc "match /databases/{db}/documents")
+match /lexicourse_joueurs/{uid} {
+  allow read: if request.auth != null && request.auth.uid == uid;
+  allow create, update: if request.auth != null && request.auth.uid == uid
+    && request.resource.data.keys().hasOnly(['pseudo','classe','cartes','ok','tot','maj'])
+    && request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 16
+    && request.resource.data.classe is string && request.resource.data.classe.size() <= 12
+    && request.resource.data.cartes is list && request.resource.data.cartes.size() <= 64;
+  allow delete: if false;
+}

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur de prompts — Asset Studio 2D</title>
+<style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #00aaff;
+      --accent-neon: #00ff00;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--accent);
+      margin-bottom: 25px;
+      font-size: 2em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+      color: var(--accent-neon);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .field {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 0.9em;
+      color: var(--text-muted);
+    }
+
+    select, input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--text);
+      box-sizing: border-box;
+      font-size: 0.95em;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-group label {
+      margin-bottom: 0;
+      cursor: pointer;
+    }
+
+    /* Output Section */
+    .output-card {
+      grid-column: span 2;
+    }
+
+    @media (max-width: 768px) {
+      .output-card {
+        grid-column: span 1;
+      }
+    }
+
+    .prompt-box {
+      background: #090d16;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 15px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.95em;
+      line-height: 1.5;
+      color: #38bdf8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 120px;
+      margin-bottom: 15px;
+    }
+
+    .btn-copy {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: all 0.2s ease;
+    }
+
+    .btn-copy:hover {
+      background: #38bdf8;
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .preset-btn {
+      background: var(--border);
+      color: var(--text);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: var(--accent);
+      color: #000;
+    }
+      .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .tip{font-size:.85em;color:var(--text-muted);border-left:3px solid var(--accent);padding:6px 10px;margin-top:6px}
+    .attach{border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:.95em;line-height:1.5}
+    .attach.need{background:#14321f;border:2px solid #22c55e}.attach.none{background:#1e293b;border:2px dashed var(--border)}
+    .attach b{color:#fff}.attach ul{margin:6px 0 0 18px;padding:0}
+    .fileout{background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.92em}
+    .fileout code,code{color:var(--accent-neon)}
+    .prompt-box.small{font-size:.85em;max-height:130px;overflow:auto}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.btn-copy.alt{background:#334155}
+    .step{padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:.92em}
+    .step.ok{border-color:#22c55e;color:#86efac}.step.cur{background:#0c4a6e;border-color:var(--accent);color:#fff}
+    label.chk{display:flex;gap:8px;align-items:center;cursor:pointer}label.chk input{width:auto}
+    .row .btn-copy{width:auto;flex:1;min-width:180px}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ Générateur de prompts — assets 2D ⚡</h1>
+  <div class="grid">
+    <div class="card">
+      <h2>1. Personnage</h2>
+      <div class="field"><label>Personnage :</label><select id="who" onchange="loadWho()"></select></div>
+      <div class="two">
+        <div class="field"><label>Nom affiché</label><input type="text" id="nom" oninput="refresh()"></div>
+        <div class="field"><label>Dossier (court, sans espace)</label><input type="text" id="slug" oninput="refresh()"></div>
+      </div>
+      <div class="field g-perso"><label>Véhicule (en anglais)</label><textarea id="veh" rows="2" oninput="refresh()"></textarea></div>
+      <div class="field g-perso"><label>Robot (en anglais)</label><textarea id="bot" rows="2" oninput="refresh()"></textarea></div>
+      <div class="field g-ab"><label>Emblème de sa particularité (en anglais, pour la carte)</label><input type="text" id="ab" oninput="refresh()" placeholder="a shield"></div>
+      <div class="field"><label>Type de la carte (fond)</label><select id="type" onchange="refresh()"><option value="feu">Feu</option><option value="electrique">Électrique</option><option value="energie">Énergie</option><option value="eau">Eau</option><option value="force">Force</option><option value="glace">Glace</option><option value="love">Amour</option><option value="nature">Nature</option><option value="tenebre">Ténèbre</option></select></div>
+      <div class="three">
+        <div class="field"><label>Famille (modèle)</label><input type="text" id="famille" oninput="refresh()"></div>
+        <div class="field"><label>Couleur (hex)</label><input type="text" id="couleur" oninput="refresh()" placeholder="#e03030"></div>
+        <div class="field"><label>Étoiles de la carte</label>
+          <select id="rarity" onchange="refresh()"><option value="depart">Départ (3 étoiles, offerte)</option><option value="commune">2 étoiles</option><option value="rare">3 étoiles</option><option value="epique">4 étoiles</option><option value="extra">5 étoiles (sans-faute)</option></select></div>
+      </div>
+      <label>Parcours de création (dans l'ordre) :</label>
+      <div id="steps"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Que veux-tu créer ?</h2>
+      <div class="field"><label>Élément :</label>
+        <select id="asset" onchange="refresh()">
+          <optgroup label="Personnage (dans l'ordre)">
+            <option value="sheet8">1 · Planche 8 vues (à faire en premier)</option>
+            <option value="transfo_back">2 · Transformation de dos</option>
+            <option value="jump">3 · Saut de la voiture (de dos)</option>
+            <option value="step">4 · Enjambement du robot (de dos)</option>
+            <option value="transfo_34">5 · Transformation 3/4 arrière (facultatif)</option>
+            <option value="card">6 · Carte (automatique : prompt seulement pour une carte spéciale)</option>
+          </optgroup>
+          <optgroup label="Variantes de couleur">
+            <option value="variant">Variante de couleur : planche 8 vues</option>
+            <option value="variant_card">Variante de couleur : carte</option>
+          </optgroup>
+          <optgroup label="Écrans">
+            <option value="logo">Logo du jeu</option>
+            <option value="home">Écran d'accueil</option>
+            <option value="select">Écran de choix du pilote (fond)</option>
+            <option value="podium">Podium (fond)</option>
+            <option value="thumb">Miniature de piste</option>
+          </optgroup>
+          <optgroup label="Piste">
+            <option value="parallax">Ciel / panorama</option>
+            <option value="scenery">Décors de bord de route</option>
+            <option value="obstacles">Obstacles (objets isolés)</option>
+            <option value="gates">Portiques : modules fermé / ouvert</option>
+            <option value="gantry">Portique : arche de question</option>
+            <option value="track_element">Arches de départ et de passage</option>
+            <option value="boostpad">Tapis de boost</option>
+          </optgroup>
+          <optgroup label="Interface et autres">
+            <option value="fx">Effets spéciaux</option>
+            <option value="ui">Icônes d'interface</option>
+            <option value="vehicle">Véhicule figurant (sans transformation)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field g-theme"><label>Piste / thème :</label>
+        <select id="theme" onchange="refresh()"></select></div>
+      <div class="field g-variant"><label>Personnage de base à recolorer (son dossier) :</label><input type="text" id="vbase" oninput="refresh()" placeholder="rouge"></div>
+      <div class="field g-variant"><label>Nouvelles couleurs (en anglais) :</label><textarea id="vcolors" rows="2" oninput="refresh()" placeholder="electric blue body with white stripes, orange glowing accents"></textarea></div>
+      <div class="field"><label>Détails en plus (en anglais, facultatif) :</label><input type="text" id="extra" oninput="refresh()"></div>
+      <div class="field"><label>Couleur du fond uni :</label>
+        <select id="bgsel" onchange="refresh()"><option value="auto">Automatique (conseillé)</option><option value="green">Vert vif #00FF00</option><option value="magenta">Magenta #FF00FF</option><option value="blue">Bleu #00AAFF</option></select></div>
+      <div class="field"><label class="chk"><input type="checkbox" id="styleRef" onchange="refresh()"> Ajouter une image de style (pour garder la même ambiance)</label></div>
+      <div class="tip">💡 Génère 4 variantes à chaque fois et garde la meilleure. Si seule la couleur change, le jeu pourra recolorer par code : inutile alors de refaire toutes les images.</div>
+    </div>
+  </div>
+
+  <div class="card output-card" style="margin-top:20px">
+    <h2>3. À faire maintenant</h2>
+    <div id="attach" class="attach"></div>
+    <div id="fileout" class="fileout"></div>
+    <label>Prompt à copier-coller (en anglais) :</label>
+    <div class="prompt-box" id="prompt"></div>
+    <div class="row"><button class="btn-copy" onclick="copyBox('prompt',this)">📋 Copier le prompt</button></div>
+    <label style="margin-top:14px">Prompt négatif (si l'outil a un champ « à éviter ») :</label>
+    <div class="prompt-box small" id="neg"></div>
+    <div class="row"><button class="btn-copy" onclick="copyBox('neg',this)">📋 Copier</button>
+      <button class="btn-copy alt" id="doneBtn" onclick="toggleDone()"></button>
+      <button class="btn-copy alt" id="nextBtn" onclick="nextStep()">Étape suivante →</button></div>
+    <div id="jsonBox" style="display:none">
+      <label style="margin-top:14px">À ajouter dans <code>src/personnages.json</code> quand le personnage est prêt :</label>
+      <div class="prompt-box small" id="json"></div>
+      <div class="row"><button class="btn-copy" onclick="copyBox('json',this)">📋 Copier l'entrée</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+// ===== DONNÉES =====
+const WHO=[
+ {id:'rouge',type:'feu',nom:'Rouge',famille:'supercar',couleur:'#e03030',rar:'depart',ab:'a flame',veh:'a low wedge-shaped red supercar with sharp lines, a rear wing and glowing cyan accents',bot:'a powerful red warrior robot built from the car panels, with glowing cyan eyes and wheels on its legs'},
+ {id:'jaune',type:'electrique',nom:'Jaune',famille:'coupe',couleur:'#e8c820',rar:'depart',ab:'a lightning bolt',veh:'a yellow sports coupe with a big rear wing and black details',bot:'a yellow and black robot with the rear wing on its back and wheels on its shoulders'},
+ {id:'camion',type:'force',nom:'Bleu (camion)',famille:'camion',couleur:'#2a5be0',rar:'commune',ab:'a shield',veh:'a heavy blue armored truck on caterpillar tracks with a boxy cargo body and red tail lights',bot:'a massive blue robot with tank tracks as feet and boxy armored shoulders'},
+ {id:'moto',type:'tenebre',nom:'Noir (moto)',famille:'moto',couleur:'#333333',rar:'epique',ab:'a double arrow',veh:'a black cyberpunk sport motorcycle with glowing cyan wheel rims and glowing cyan lines',bot:'a slender black robot with long glowing cyan braids and roller wheels on its feet'},
+ {id:'citadine',type:'glace',nom:'Blanc (citadine)',famille:'citadine',couleur:'#e8eef5',rar:'commune',ab:'a light bulb',veh:'a small round white city hatchback with glowing cyan headlights',bot:'a friendly white robot with a big round helmet, headphones and wheels on its feet'},
+ {id:'f1',type:'eau',nom:'Cyan (formule 1)',famille:'f1',couleur:'#19c9c9',rar:'epique',ab:'a rocket flame',veh:'a teal open-wheel formula one racing car with a big rear wing and a red rear light',bot:'a teal robot with sharp shoulder blades, two antennas and roller wheels on its feet'},
+ {id:'monster-truck',type:'force',nom:'Violet (monster truck)',famille:'monster',couleur:'#7a2fd0',rar:'epique',ab:'a clenched fist',veh:'a purple monster truck with giant tyres and cyan lights',bot:'a massive purple brute robot with square shoulders and giant tyres as feet'},
+ {id:'camping-car',type:'love',nom:'Rose (camping-car)',famille:'camping-car',couleur:'#f48fb8',rar:'rare',ab:'a wrench',veh:'a pink and white camper van with a spare wheel on the back and glowing cyan wheel rims',bot:'a friendly pink and white robot with the camper body as a backpack and round wheels on its legs'}];
+const THEMES={
+ cyber:{n:'1. Cyber-City néon',slug:'piste1-cyber-city',green:1,sky:'a deep navy and violet starry night sky with a few small planets and dense futuristic skyscraper silhouettes with glowing cyan and magenta windows',objs:['tall neon pylon','glowing street lamp','blank holographic billboard','small futuristic building','cyan glowing tree-like hologram','red and white chevron arrow sign','concrete barrier block','traffic light tower'],obst:['low yellow and black striped barrier','oil slick puddle','stack of grey concrete blocks','low concrete wall with warning stripes','pool of glowing cyan liquid','small orange launch ramp','row of orange traffic cones'],thumb:'a futuristic neon night city under a starry sky with glowing skyscrapers'},
+ desert:{n:'2. Désert et canyon',slug:'piste2-desert',green:1,sky:'a warm orange and pink sunset sky with distant mesas and rock arches',objs:['tall red rock arch','large cactus','small round cactus','wooden road sign','sandstone rock pillar','animal skull on a rock','small adobe hut','red and white chevron arrow sign'],obst:['wooden barricade','sand pit','stack of sandstone blocks','low stone wall','shallow muddy pool','wooden launch ramp','row of orange cones'],thumb:'a red desert canyon at sunset with rock arches and cacti'},
+ snow:{n:'3. Forêt et montagne enneigée',slug:'piste3-foret-neige',green:1,sky:'a cold pale blue winter sky with snowy mountain peaks and pine forest silhouettes',objs:['snow-covered pine tree','small snowy fir','pile of logs','ski pole sign','wooden mountain cabin','large ice crystal','red and white chevron arrow sign','snowman'],obst:['wooden fence barrier','patch of black ice','stack of snow-covered logs','low snow wall','frozen water pool','snow launch ramp','row of orange cones'],thumb:'a snowy mountain road through a pine forest'},
+ port:{n:'4. Port industriel',slug:'piste4-port',green:0,sky:'a gray and orange dusk sky with distant harbor cranes and container stacks',objs:['stack of colorful shipping containers','tall port crane','oil drum','floodlight tower','pallet stack','mooring bollard','warning sign','forklift'],obst:['striped road barrier','oil puddle','stack of pallets','container wall','shallow puddle of seawater','steel launch ramp','row of cones'],thumb:'an industrial harbor at dusk with cranes and colorful containers'},
+ lune:{n:'5. Station lunaire',slug:'piste5-lune',green:0,sky:'a black starry sky with a huge planet and distant habitat domes',objs:['radio antenna dish','dome habitat','moon rover','crater rim rocks','solar panel array','lunar lander','small flag','red and white chevron sign'],obst:['metal barrier','small crater hole','stack of moon rocks','low rock wall','pool of glowing blue energy liquid','metal launch ramp','row of glowing cones'],thumb:'a lunar base on the moon with a giant planet in the sky'},
+ volcan:{n:'6. Volcan (piste finale)',slug:'piste6-volcan',green:0,sky:'a red and black smoky sky with erupting volcano silhouettes',objs:['black basalt rock spire','lava geyser','smoking vent','charred dead tree','obsidian crystal','lava river segment','warning sign','burnt wooden cart'],obst:['charred barrier','lava puddle','stack of basalt blocks','low obsidian wall','pool of glowing lava','basalt launch ramp','row of glowing cones'],thumb:'a volcanic landscape with rivers of lava and glowing rocks'}};
+const STEPS=[['sheet8','fiche','Planche 8 vues'],['transfo_back','transformation-dos','Transformation de dos'],['jump','saut','Saut de la voiture'],['step','enjambement','Enjambement du robot'],['transfo_34','transformation-3-4','Transformation 3/4 (facultatif)'],['card','carte','Carte de collection']];
+const BGS={green:['bright green','#00FF00'],magenta:['bright magenta','#FF00FF'],blue:['sky blue','#00AAFF']};
+const STYLE='bold cartoon vector style, thick dark navy outlines, cel-shaded flat colors with simple highlights, clean readable silhouette';
+const NOTEXT='No text, no letters, no numbers, no labels, no captions, no watermark.';
+const NOBRAND='Original design, no real brand logos, no badges.';
+const NEG='text, letters, numbers, labels, captions, watermark, logo, brand, ground shadow, reflection, gradient background, textured background, cropped, blurry, low quality, different design between views';
+const RSTYLE={depart:'Friendly simple background: a smooth gradient from deep navy to the main color of the character with a few soft glowing shapes.',commune:'Simple background: a smooth gradient from deep navy to the main color of the character with a few soft glowing shapes.',rare:'Energetic background with bright light rays, floating sparks and a glowing aura around the robot.',epique:'Spectacular background with lightning, a strong colored glow, floating particles and dramatic rim lighting.',extra:'Legendary holographic background with rainbow prismatic light, shining golden particles, a strong halo behind the robot and a luxurious sparkling atmosphere.'};
+// ===== OUTILS =====
+const P=(s,f)=>`assets/sources/personnages/${s}/${f}.*`, D=(t,f)=>`assets/sources/decors/${THEMES[t].slug}/${f}.*`;
+const IDS=['type','who','nom','slug','veh','bot','ab','famille','couleur','rarity','asset','theme','extra','bgsel','vbase','vcolors','styleRef'];
+function ctx(){const c={};IDS.forEach(i=>{const e=$(i);c[i]=e.type=='checkbox'?e.checked:e.value.trim()});c.slug=c.slug||'nouveau';c.veh=c.veh||'the vehicle';c.bot=c.bot||'the robot';c.T=THEMES[c.theme];return c}
+// ===== CATALOGUE : chaque élément donne le prompt, les images à joindre, le nom du fichier à créer =====
+const SEQ='Same scale, same ground line and even spacing in every frame.';
+const HOLD=(c)=>`Using the attached model sheet as the exact design reference (same colors, same proportions, same details)`;
+const B={
+ sheet8:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'fiche.png'],attach:[],neg:'',core:`2D video game character model sheet, ${STYLE}. ${NOBRAND} A transformable character: ${c.veh}, which transforms into ${c.bot}. ${c.extra?c.extra+'. ':''}Layout: two horizontal rows in one image. TOP ROW, 4 views of the vehicle from left to right: front, front-left three-quarter, side profile, rear. BOTTOM ROW, 4 views of the robot from left to right: front, front-left three-quarter, side profile, back. The 8 views show exactly the same design, colors and details, are aligned on a common ground line in each row, have the same scale in each row and are evenly spaced. ${NOTEXT}`,note:`Étape 1 : cette planche sera ta référence pour toutes les étapes suivantes. Génère-en plusieurs et garde la meilleure.`}),
+ transfo_back:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'transformation-dos.png'],attach:[{n:'obligatoire',w:'la planche 8 vues de ce personnage',f:P(c.slug,'fiche')}],neg:'front view, side view, three-quarter view, camera rotation',core:`${HOLD()}, draw ${c.veh} transforming into ${c.bot} as exactly 6 frames in one horizontal row. Every frame is seen from directly BEHIND with the camera fixed at the same height and the same angle in all 6 frames: never rotate the camera, never show the front of the vehicle and never show the face of the robot. Frame 1: the vehicle intact, rear view. Frame 2: the rear panels begin to open. Frame 3: the body lifts and the arms and legs start to unfold from the chassis. Frame 4: the torso rises and the wheels slide to the legs and shoulders. Frame 5: almost a robot, the last panels sliding into place. Frame 6: the robot standing, back view. ${SEQ} ${STYLE}. ${NOTEXT} No motion effects.`}),
+ transfo_34:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'transformation-3-4.png'],attach:[{n:'obligatoire',w:'la planche 8 vues de ce personnage',f:P(c.slug,'fiche')},{n:'conseillé',w:'la transformation de dos déjà faite (pour garder les mêmes étapes)',f:P(c.slug,'transformation-dos')}],neg:'front view, face of the robot, camera rotation',core:`${HOLD()}, draw ${c.veh} transforming into ${c.bot} as exactly 6 frames in one horizontal row. Every frame is seen from the REAR-LEFT THREE-QUARTER VIEW: the character faces away from the camera and is turned slightly to the left, and the camera stays fixed at the same height and the same angle in all frames. The robot must also face away from the camera in the last frames: we only see its back, never its face or its chest. Frame 1: the vehicle intact. Frame 2: the rear panels begin to open. Frame 3: the body lifts and the limbs unfold. Frame 4: the torso rises and the wheels slide to the legs and shoulders. Frame 5: almost a robot. Frame 6: the robot standing, seen from behind. ${SEQ} ${STYLE}. ${NOTEXT}`}),
+ jump:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'saut.png'],attach:[{n:'obligatoire',w:'la planche 8 vues de ce personnage',f:P(c.slug,'fiche')}],neg:'speed lines, motion blur, front view, side view',core:`${HOLD()}, draw ${c.veh} seen from directly behind, 3 frames in one horizontal row: takeoff with the suspension compressed, peak of the jump with the wheels hanging in the air, landing with the suspension compressed again. Same scale and same camera angle in every frame, evenly spaced. ${STYLE}. ${NOTEXT} No speed lines, no motion effects.`}),
+ step:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'enjambement.png'],attach:[{n:'obligatoire',w:'la planche 8 vues de ce personnage',f:P(c.slug,'fiche')}],neg:'speed lines, motion blur, front view, side view',core:`${HOLD()}, draw ${c.bot} seen from directly behind, 3 frames in one horizontal row: standing, taking a big step with one leg raised high, landing the step. Same scale and same camera angle in every frame, evenly spaced. ${STYLE}. ${NOTEXT} No motion effects.`}),
+ card:c=>({key:0,out:[`assets/sources/personnages/${c.slug}/`,'carte.png'],attach:[{n:'obligatoire',w:'la planche 8 vues de ce personnage',f:P(c.slug,'fiche')},{n:'conseillé',w:'la carte d\'un autre personnage déjà faite (même style, même cadrage)',f:'assets/sources/personnages/<autre>/carte.*'}],neg:'card frame, border, rounded corners, text, numbers, back view',core:`Vertical 2:3 collectible trading card illustration, ${STYLE}. ${HOLD()}, show ${c.bot} seen from the FRONT, standing in a confident heroic pose and facing the camera, centered, with ${c.veh} also seen from the front, smaller, parked just behind or beside the robot. ${RSTYLE[c.rarity]} ${c.ab?'A small glowing emblem of '+c.ab+' floats near the upper right corner. ':''}${c.extra?c.extra+'. ':''}Keep the lower 20 percent of the image calmer and darker so that the name and abilities can be added by software. No card frame, no border, no rounded corners. ${NOTEXT}`,note:`Inutile pour une carte normale : le jeu compose la carte tout seul (fond du type + voiture et robot de face de la planche 8 vues). N'utilise ce prompt que pour une carte spéciale faite à la main. Le nom et les étoiles sont ajoutés par le jeu.`}),
+ variant:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'fiche.png'],attach:[{n:'obligatoire',w:'la planche 8 vues du personnage de base',f:P(c.vbase||'<base>','fiche')}],neg:'different shapes, different layout, text',core:`Using the attached model sheet as the exact reference, redraw exactly the same model sheet: the same two rows, the same 8 views, the same layout, the same shapes, the same details and the same poses. Change ONLY the color scheme: ${c.vcolors||'(décris les nouvelles couleurs)'}. Keep the outlines, the lighting style and every detail identical. ${c.extra?c.extra+'. ':''}${NOTEXT}`,note:`Ensuite, refais les étapes 2 à 6 pour ce nouveau dossier en joignant sa nouvelle planche. Mets le même « Famille » : le jeu regroupera les couleurs d'un même modèle.`}),
+ variant_card:c=>({key:0,out:[`assets/sources/personnages/${c.slug}/`,'carte.png'],attach:[{n:'obligatoire',w:'la carte du personnage de base',f:P(c.vbase||'<base>','carte')}],neg:'different pose, different layout, frame, text',core:`Using the attached trading card illustration as the exact reference, redraw exactly the same illustration: same pose, same framing, same background style and same details. Change ONLY the color scheme of the character: ${c.vcolors||'(décris les nouvelles couleurs)'}. ${NOTEXT} No card frame, no border.`}),
+ logo:c=>({key:0,out:['assets/sources/interface/','logo.png'],attach:[],neg:'misspelled letters, extra words, tagline, watermark',core:`Game title logo reading the single word LEXICOURSE in bold chunky futuristic letters, glossy red with chrome edges and a glowing cyan outline, small racing stripes and a speed trail behind the letters, centered on a plain dark navy background, high contrast, ${STYLE}. No other text. The letters must be exactly L E X I C O U R S E.`,note:`Les générateurs se trompent souvent d'orthographe : si le mot est faux, fais le logo sans texte (retire la phrase sur les lettres) et ajoute le titre dans Canva avec une police libre (Orbitron, Audiowide).`}),
+ home:c=>({key:0,out:['assets/sources/interface/','accueil.png'],attach:[{n:'conseillé',w:'les cartes de 3 ou 4 personnages à mettre en scène',f:'assets/sources/personnages/<nom>/carte.*'}],neg:'text, logo, watermark, characters in the empty zones',core:`16:9 title screen illustration for a racing game, ${STYLE}. ${c.T.thumb.charAt(0).toUpperCase()+c.T.thumb.slice(1)} with a race track leading to the horizon, ${c.extra||'four transformable vehicles and robots racing side by side in dynamic poses, one of them caught in mid-transformation'}. Strong sense of speed and depth. Keep an empty calm area in the upper center for the game logo and an empty calm area on the right third for menu buttons. ${NOTEXT}`}),
+ select:c=>({key:0,out:['assets/sources/interface/','selection.png'],attach:[{n:'facultatif',w:'l\'écran d\'accueil (même ambiance)',f:'assets/sources/interface/accueil.*'}],neg:'vehicles, characters, text, cards',core:`16:9 background for a character selection screen: a futuristic neon showroom garage with a dark glossy floor, soft spotlights and subtle glowing platforms, in the same mood as a night city racing game, with a wide empty central area where trading cards will be displayed in a grid. No characters, no vehicles. ${STYLE}. ${NOTEXT}`}),
+ podium:c=>({key:0,out:['assets/sources/interface/','podium.png'],attach:[],neg:'vehicles, characters, text, numbers',core:`16:9 victory scene background: an empty three-step podium in the center of a neon stadium, confetti falling, spotlights, cheering silhouettes in the background, ${STYLE}. No vehicles, no characters. ${NOTEXT}`}),
+ thumb:c=>({key:0,out:[`assets/sources/decors/${c.T.slug}/`,'miniature.png'],attach:[{n:'conseillé',w:'la carte d\'un personnage (pour le style)',f:'assets/sources/personnages/<nom>/carte.*'}],neg:'text, logo, watermark',core:`16:9 thumbnail illustration of a racing track: ${c.T.thumb}, the road leading to the horizon, a sports car seen from behind in the foreground, strong sense of speed, ${STYLE}. ${NOTEXT}`}),
+ parallax:c=>({key:0,out:[`assets/sources/decors/${c.T.slug}/`,'ciel-panorama.png'],attach:[{n:'conseillé',w:'le panorama de la piste 1 (pour le style)',f:D('cyber','ciel-panorama')}],neg:'road, vehicles, text, visible seam, separate panels',core:`Wide panoramic background for a 2D racing game, ${STYLE}. ${c.T.sky}. One single continuous scene, 4096 by 1024 pixels, seamless horizontally: the left edge continues exactly into the right edge. The flat bottom edge of the horizon silhouettes sits at about 85 percent of the image height, with a plain dark band below it. No road, no vehicles, ${NOTEXT}`}),
+ scenery:c=>({key:1,pref:c.T.green?'magenta':null,out:[`assets/sources/decors/${c.T.slug}/`,'bord-de-route.png'],attach:[{n:'conseillé',w:'les décors de la piste 1 (pour le style)',f:D('cyber','bord-de-route')}],neg:'text, ground shadow, objects touching each other',core:`Sprite sheet of roadside objects for a 2D racing game, ${STYLE}, each object seen from the front, in two rows of 8 objects. FIRST ROW from left to right: ${c.T.objs.join(', ')}. SECOND ROW: the same 8 objects again as a second variant with different shapes and colors. Evenly spaced in a grid, same scale rules as a game asset sheet, every object fully separated. ${NOTEXT}`}),
+ obstacles:c=>({key:1,pref:c.T.green?'magenta':null,out:[`assets/sources/decors/${c.T.slug}/`,'obstacles.png'],attach:[{n:'conseillé',w:'les obstacles de la piste 1 (pour le style)',f:D('cyber','obstacles')}],neg:'text, ground shadow',core:`Sprite sheet of road obstacles for a 2D racing game, ${STYLE}, seen from directly behind with the camera slightly above, evenly spaced in two rows: ${c.T.obst.join(', ')}. ${NOTEXT}`}),
+ gates:c=>({key:1,pref:c.T.green?'magenta':null,out:[`assets/sources/decors/${c.T.slug}/`,'portiques-modules.png'],attach:[{n:'obligatoire',w:'la planche des obstacles de cette piste',f:D(c.theme,'obstacles')}],neg:'text, three-quarter view, ground shadow',core:`Using the attached image as the style reference for the objects (the same striped barrier, the same blocks, the same liquid, the same ramp, the same traffic cones), draw a sprite sheet seen from directly in front of the road with the camera slightly above, not in three-quarter view. Eight modules in a grid of 2 rows by 4 columns. Each module is exactly one road lane wide, all with the same width and a flat bottom edge, so that four identical modules can be placed side by side to cover a whole road. Top row from left to right: 1) CLOSED: the low barrier lowered across the lane; 2) OPEN: the same barrier raised, leaving a low gap in the middle; 3) CLOSED: a full wall of stacked blocks; 4) OPEN: the same wall split in the middle with a low step. Bottom row from left to right: 5) CLOSED: a wide pool of liquid; 6) OPEN: the same pool with a narrow glowing bridge across it; 7) CLOSED: the launch ramp folded flat and blocked by traffic cones; 8) OPEN: the same ramp unfolded and clear. ${STYLE}. Same scale for all modules, evenly spaced with empty space around each one. ${NOTEXT}`}),
+ gantry:c=>({key:1,out:[`assets/sources/decors/${c.T.slug}/`,'portique-arche.png'],attach:[{n:'obligatoire',w:'les éléments de course de cette piste (l\'arche de droite sert de base)',f:D(c.theme,'elements-de-course')}],neg:'text, symbols inside the panels',core:`Using the right-hand neon arch of the attached image as the design base, draw a much wider version that spans the full width of a four-lane racing road, seen from directly in front with the camera slightly above. Two tall pillars joined by a long horizontal beam, same colors and same light strips as the reference. Hanging under the beam, four equal rectangular sign panels side by side, each one a dark glass panel with a thin glowing frame and completely blank inside (no text, no symbols), so that words can be added later by software. Symmetrical and centered, ${STYLE}. ${NOTEXT}`}),
+ track_element:c=>({key:1,pref:'magenta',out:[`assets/sources/decors/${c.T.slug}/`,'elements-de-course.png'],attach:[{n:'conseillé',w:'les éléments de course de la piste 1 (pour le style)',f:D('cyber','elements-de-course')}],neg:'text',core:`Racing game track elements seen from the front, ${STYLE}: a large starting and finish arch with a checkered pattern, a slim checkpoint arch with colored light strips, and a glowing green boost pad lying flat on the road seen in perspective. Evenly spaced, fully separated. ${NOTEXT}`}),
+ boostpad:c=>({key:1,pref:'magenta',out:['assets/sources/interface/','tapis-boost.png'],attach:[{n:'obligatoire',w:'les éléments de course (le tapis vert en bas à gauche)',f:D(c.theme,'elements-de-course')}],neg:'text, other objects',core:`Redraw only the glowing green boost pad lying flat on the road, taken from the attached image, exactly as designed (dark metal frame, cyan corner lights, bright green chevrons pointing forward), seen in the same perspective, centered. Nothing else in the image. ${STYLE}. ${NOTEXT}`}),
+ fx:c=>({key:1,pref:'magenta',out:['assets/sources/interface/','fx-effets.png'],attach:[{n:'facultatif',w:'la planche d\'un personnage (pour le style)',f:P('rouge','fiche')}],neg:'pink, magenta, text, vehicles, characters',core:`Game effects sprite sheet, ${STYLE}, bright saturated colors. There must be no pink and no magenta anywhere in the effects. Five rows, each row showing one effect in 4 animation frames from left to right, evenly spaced, same size within a row. Row 1: boost flames with a cyan and white trail pointing backward. Row 2: a comic impact burst made of yellow and orange spark star shapes and small grey debris, for a crash. Row 3: a ring of cyan transformation energy with small mechanical sparks expanding outward. Row 4: green sparkles with small white checkmarks floating upward, for a correct answer. Row 5: a red warning flash with small grey smoke puffs, for a wrong answer. Each effect is centered in its cell and readable at small size. ${NOTEXT}`}),
+ ui:c=>({key:1,pref:'magenta',out:['assets/sources/interface/','icones.png'],attach:[{n:'facultatif',w:'la planche d\'un personnage (pour le style)',f:P('rouge','fiche')}],neg:'pink, magenta, text, numbers',core:`Sprite sheet of round game interface icons, ${STYLE}, glossy neon look. There must be no pink and no magenta in the icons. Three rows, all icons evenly spaced. Row 1: a round button with a neutral white car silhouette surrounded by two circular arrows; the same button with a neutral white humanoid robot silhouette; the same button greyed out with a circular cooldown ring. Row 2: a round left arrow button; a round right arrow button; a small round speedometer gauge icon. Row 3: a small stopwatch icon; a small golden trophy icon; three small medals in gold, silver and bronze with no numbers on them. ${NOTEXT}`}),
+ vehicle:c=>({key:1,out:[`assets/sources/personnages/${c.slug}/`,'fiche.png'],attach:[],neg:'',core:`2D video game vehicle sheet, ${STYLE}. ${NOBRAND} ${c.veh}. Four views in one row from left to right: front, front-left three-quarter, side profile, rear. Same design in all views, aligned on a common ground line, evenly spaced. ${c.extra?c.extra+'. ':''}${NOTEXT}`})};
+const HERO=['sheet8','transfo_back','jump','step','transfo_34','card','variant','variant_card'];
+const USES={sheet8:['perso'],transfo_back:['perso'],transfo_34:['perso'],jump:['perso'],step:['perso'],card:['perso','ab'],variant:['variant'],variant_card:['variant'],vehicle:['perso'],home:['theme'],thumb:['theme'],parallax:['theme'],scenery:['theme'],obstacles:['theme'],gates:['theme'],gantry:['theme'],track_element:['theme'],boostpad:['theme']};
+// ===== INTERFACE =====
+const doneKey=s=>'lexi_done_'+s,getDone=s=>{try{return JSON.parse(localStorage.getItem(doneKey(s))||'{}')}catch(e){return{}}};
+function bgFor(c,r){let k=c.bgsel,why='choisi par toi';if(k=='auto'){const t=(c.veh+' '+c.bot+' '+c.vcolors+' '+c.extra).toLowerCase();
+  if(r.pref){k=r.pref;why=r.pref=='magenta'&&(['fx','ui','track_element','boostpad'].includes(c.asset)?'cet élément contient du vert ou du cyan':'cette piste contient du vert')}else if(/green|lime|mint|emerald/.test(t)){k='magenta';why='ton personnage contient du vert'}else{k='green';why='aucune couleur du personnage n\'y ressemble'}}return{k,why,n:BGS[k][0],h:BGS[k][1]}}
+function refresh(){const c=ctx(),r=B[c.asset](c),use=USES[c.asset]||[],bg=r.key?bgFor(c,r):null;
+  ['perso','ab','theme','variant'].forEach(g=>document.querySelectorAll('.g-'+g).forEach(e=>e.style.display=use.includes(g)?'':'none'));
+  let core=r.core;if(c.styleRef&&!r.attach.some(a=>a.n=='obligatoire'&&/fiche|carte/.test(a.f)&&c.asset!='gates'&&c.asset!='gantry'&&c.asset!='boostpad')){core+=' Use the attached style reference image only for the illustration style and the mood: do not copy its design.'}
+  const prompt=core+(bg?` ${'Plain solid flat background of a single color: solid '+bg.n+' '+bg.h+', no gradient, no texture, no ground shadow, no reflection, every element fully separated with generous empty space around it, nothing touching the image edges.'}`:'');
+  $('prompt').textContent=prompt;$('neg').textContent=(r.neg?r.neg+', ':'')+NEG;
+  const at=r.attach.slice();if(c.styleRef)at.push({n:'facultatif',w:'une image du même univers, pour le style seulement',f:'(n\'importe quelle planche ou carte déjà faite)'});
+  const req=at.filter(a=>a.n=='obligatoire');
+  $('attach').className='attach '+(at.length?'need':'none');
+  $('attach').innerHTML=at.length?`<b>📎 Image${at.length>1?'s':''} à joindre au prompt :</b><ul>${at.map(a=>`<li><b>${a.n}</b> — ${a.w}<br><code>${a.f}</code></li>`).join('')}</ul>`:`<b>📎 Aucune image à joindre</b> pour cet élément.`;
+  $('fileout').innerHTML=`💾 <b>Nom à donner au résultat :</b> <code>${r.out[1]}</code> — à ranger dans <code>${r.out[0]}</code>`+(bg?`<br>🎨 <b>Fond uni demandé :</b> ${bg.n} <code>${bg.h}</code> (${bg.why})`:`<br>🎨 Pas de fond uni : image complète.`)+(r.note?`<br>ℹ️ ${r.note}`:'');
+  const st=getDone(c.slug);$('steps').innerHTML=STEPS.map((s,i)=>`<div class="step ${st[s[1]]?'ok':''} ${c.asset==s[0]?'cur':''}" onclick="go('${s[0]}')">${i+1}. ${s[2]} ${st[s[1]]?'✔':''}</div>`).join('');
+  const inHero=HERO.includes(c.asset),cur=STEPS.find(s=>s[0]==c.asset);
+  $('doneBtn').style.display=cur?'':'none';$('nextBtn').style.display=cur?'':'none';if(cur)$('doneBtn').textContent=st[cur[1]]?'↩ Marquer comme à refaire':'✔ Marquer comme fait';
+  $('jsonBox').style.display=(c.asset=='card'||c.asset=='variant'||c.asset=='variant_card')?'':'none';
+  $('json').textContent=JSON.stringify(Object.assign({id:c.slug,nom:c.nom||c.slug,dossier:c.slug,famille:c.famille||c.slug,couleur:c.couleur||'#ffffff',etoiles:({depart:3,commune:2,rare:3,epique:4,extra:5})[c.rarity]},c.rarity=='depart'?{depart:true}:{},{type:c.type,hauteur:240,indices:null,particularite:''}),null,2);
+  try{localStorage.setItem('lexi_form',JSON.stringify(c))}catch(e){}}
+function go(a){$('asset').value=a;refresh()}
+function nextStep(){const c=ctx(),i=STEPS.findIndex(s=>s[0]==c.asset);go(STEPS[Math.min(STEPS.length-1,i+1)][0])}
+function toggleDone(){const c=ctx(),s=STEPS.find(x=>x[0]==c.asset),d=getDone(c.slug);d[s[1]]=!d[s[1]];localStorage.setItem(doneKey(c.slug),JSON.stringify(d));refresh()}
+function loadWho(){const w=WHO.find(x=>x.id==$('who').value);if(w){$('type').value=w.type||'energie';$('nom').value=w.nom;$('slug').value=w.id;$('veh').value=w.veh;$('bot').value=w.bot;$('ab').value=w.ab;$('famille').value=w.famille;$('couleur').value=w.couleur;$('rarity').value=w.rar}
+  else{['nom','slug','veh','bot','ab','famille','couleur'].forEach(i=>$(i).value='');$('rarity').value='commune'}refresh()}
+function copyBox(id,b){navigator.clipboard.writeText($(id).textContent).then(()=>{const t=b.textContent;b.textContent='✅ Copié !';setTimeout(()=>b.textContent=t,1500)})}
+$('who').innerHTML='<option value="">➕ Nouveau personnage</option>'+WHO.map(w=>`<option value="${w.id}">${w.nom} (${w.id})</option>`).join('');
+$('theme').innerHTML=Object.entries(THEMES).map(([k,t])=>`<option value="${k}">${t.n}</option>`).join('');
+try{const s=JSON.parse(localStorage.getItem('lexi_form')||'null');if(s)IDS.forEach(i=>{const e=$(i);if(e&&s[i]!==undefined)e.type=='checkbox'?e.checked=s[i]:e.value=s[i]});else loadWho()}catch(e){loadWho()}
+if(!$('slug').value)loadWho();refresh();
+</script>
+</body>
+</html>
