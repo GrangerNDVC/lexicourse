@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.9 — écran d'accueil, surprise du robot</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.9.1 — écran d'accueil, surprise du robot</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
 <canvas id="c" width="960" height="540"></canvas>
@@ -106,7 +106,7 @@ function startRace(){pos=0;x=LX[1];ln=1;v=0;lapT=0;spOn=0;spT=0;form=0;tr.t=0;ac
   say('Place-toi sur la voie du bon mot. Le bloc ne disparaît que sur la bonne réponse !',1);mode='race'}
 function endRace(){const acc=lapTot?lapOk/lapTot:0,perfect=lapTot>=3&&acc==1;pending=[];if(lapTot>=3&&acc>=WIN_PCT)pending.push(0);if(perfect)pending.push(1);
   prof.dry=(prof.dry|0)+1;if(!pending.length&&prof.dry>=PITY&&lapTot>=3)pending.push(0);if(pending.length)prof.dry=0;prof.races=(prof.races|0)+1;
-  res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect};mode='result';spOn=0;boosting=0;save()}
+  res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect};mode='result';pos=Math.min(pos,LEN-1);spOn=0;boosting=0;save()}
 function nextReward(){while(pending.length){if(draw(pending.shift()))return}mode='menu';v=0}
 function closeReveal(){reveal=null;if(mode=='result')nextReward()}
 function btn(x1,y1,w,h,t,f,c){btns.push({x:x1,y:y1,w,h,f});g.fillStyle=c||'#22e6ff';g.beginPath();g.roundRect(x1,y1,w,h,14);g.fill();g.fillStyle='#021';g.font='bold 24px system-ui';g.textAlign='center';g.fillText(t,x1+w/2,y1+h/2+8)}
@@ -238,7 +238,7 @@ function render(){
   const k=.72,tw=BG.width*k,th=BG.height*k,top=H/2+8-435*k;
   for(let t=Math.floor(bgX/tw);t*tw-bgX<W;t++){g.save();g.translate(t*tw-bgX+(t&1?tw:0),top);if(t&1)g.scale(-1,1);g.drawImage(BG,0,0,tw,th);g.restore()}
   g.fillStyle='#0b1038';g.fillRect(-20,H/2+8,W+40,H);
-  const b=segs[pos/SEG|0],bp=pos%SEG/SEG,py=b.a.wy+(b.b.wy-b.a.wy)*bp;let cx=0,dc=-b.curve*bp,maxy=H;vis=[];
+  const b=segs[Math.max(0,Math.min(N-1,pos/SEG|0))],bp=Math.max(0,Math.min(1,pos%SEG/SEG)),py=b.a.wy+(b.b.wy-b.a.wy)*bp;let cx=0,dc=-b.curve*bp,maxy=H;vis=[];
   for(let n=0;n<DRAW;n++){const s=segs[(b.i+n)%N],cz=pos-(s.i<b.i?LEN:0);
     pr(s.a,x*ROAD-cx,py+CAMH,cz);pr(s.b,x*ROAD-cx-dc,py+CAMH,cz);cx+=dc;dc+=s.curve;s.clip=maxy;s.fog=1-1/Math.exp(n/DRAW*n/DRAW*FOG);
     if(s.a.cz<=DEPTH||s.b.sy>=s.a.sy||s.b.sy>=maxy)continue;seg(s);vis.push(s);maxy=s.b.sy}
@@ -250,6 +250,6 @@ function render(){
   player();g.restore();if(mode=='race')hud();else if(mode=='home')home();else if(mode=='menu')menu();else if(mode=='collection')collection();else resultScreen();if(reveal)card();if(surprise)surpriseScreen()}
 
 let last=performance.now(),acc=0;
-function loop(t){const f=Math.min(.25,(t-last)/1000);last=t;acc+=f;fps+=(1/Math.max(f,.001)-fps)*.05;while(acc>=1/60){update(1/60);acc-=1/60}render();requestAnimationFrame(loop)}
+function loop(t){const f=Math.min(.25,(t-last)/1000);last=t;acc+=f;fps+=(1/Math.max(f,.001)-fps)*.05;requestAnimationFrame(loop);try{while(acc>=1/60){update(1/60);acc-=1/60}render()}catch(e){console.error('Lexicourse :',e);acc=0;if(g.reset)g.reset();else{g.setTransform(1,0,0,1,0,0);g.globalAlpha=1}}}   // la boucle ne s'arrête plus jamais, même en cas d'erreur
 init();
 </script></body></html>

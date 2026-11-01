@@ -1,4 +1,4 @@
-"""Composition automatique des cartes : fond du type + voiture de face (derrière) + robot de face (devant), d'après la planche 8 vues.
+"""Composition automatique des cartes : fond du type + voiture de 3/4 avant (derrière) + robot de face (devant), d'après la planche 8 vues.
 Le nom et les étoiles ne sont PAS dessinés ici : le jeu les ajoute (nom en bas, étoiles en haut à gauche)."""
 from PIL import Image, ImageDraw, ImageFilter
 CW, CH = 1027, 1536
@@ -17,11 +17,11 @@ def _ombre(bg, y, largeur):
     return Image.alpha_composite(bg, sh.filter(ImageFilter.GaussianBlur(14)))
 
 def compose(fond, car34, robot, typ, avec_robot=True):
-    """Voiture de 3/4 avant DEVANT ; robot de face DERRIÈRE (absent si avec_robot est faux : la surprise du tutoriel)."""
+    """Robot de face DEVANT (grand, en bas) ; voiture de 3/4 avant DERRIÈRE (plus petite, plus haut). Sans robot (surprise du tutoriel) : la voiture seule."""
     bg = _fond(fond, typ)
     if avec_robot:
-        r = fit(robot, CW*.70, CH*.60); bg.alpha_composite(r, ((CW-r.width)//2, int(CH*.70)-r.height))
-        c = fit(car34, CW*.92, CH*.34); bg = _ombre(bg, int(CH*.81), int(c.width*.8)); bg.alpha_composite(c, ((CW-c.width)//2, int(CH*.81)-c.height))
+        c = fit(car34, CW*.94, CH*.32); bg.alpha_composite(c, ((CW-c.width)//2, int(CH*.70)-c.height))
+        r = fit(robot, CW*.64, CH*.54); bg = _ombre(bg, int(CH*.86), int(r.width*.7)); bg.alpha_composite(r, ((CW-r.width)//2, int(CH*.86)-r.height))
     else:
         c = fit(car34, CW*.96, CH*.46); bg = _ombre(bg, int(CH*.70), int(c.width*.8)); bg.alpha_composite(c, ((CW-c.width)//2, int(CH*.70)-c.height))
     return bg.convert('RGB')

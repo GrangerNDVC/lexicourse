@@ -22,6 +22,9 @@
 - 30/10 — Écran d'accueil installé ; connexion par code à 4 chiffres reportée (invité seulement pour l'instant).
 - 30/10 — Découverte du robot : provisoire après 4 portiques ; cible = battre l'autre voiture du tutoriel (conditions proposées dans `regles-de-jeu.md`).
 - 30/10 — Tirage : propositions à valider — 2★ 60 %, 3★ 30 %, 4★ 10 % ; 5★ par sans-faute seulement ; chances en hausse avec les séries de bonnes réponses et la régularité.
+- 01/11 — Cartes : le robot est DEVANT et la voiture (3/4 avant) DERRIÈRE, comme sur les cartes d'origine (annule la décision du 30/10).
+- 01/11 — Bug de fin de course corrigé (rendu hors piste qui arrêtait la boucle) ; la boucle de jeu est maintenant protégée contre les erreurs.
+- 01/11 — Nouvel ordre : d'abord accueil/hub branchés (tutoriel, courses grisées tant que non débloquées), puis tutoriel avec adversaire ; chaque course aura son entraînement seul avant la course. Nouveaux sprites à venir.
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).

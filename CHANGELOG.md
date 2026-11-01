@@ -1,5 +1,9 @@
 # Journal des versions
 
+## v0.9.1 (correctif)
+- **Bug corrigé : écran figé en fin de course** (décor, véhicule et boutons disparaissent, plus aucune commande). Cause : à l'arrivée, la position dépassait la longueur de la piste et le rendu plantait, ce qui arrêtait toute la boucle du jeu. Corrections : position bornée à l'arrivée et au rendu ; la boucle ne s'arrête plus jamais (une erreur est écrite dans la console, le jeu continue).
+- **Cartes** : le robot est de nouveau DEVANT et la voiture (3/4 avant) DERRIÈRE (`src/tools/cartes.py`). À prendre en compte en relançant `python src/tools/build.py` avec les images sources.
+
 ## v0.9
 - **Écran d'accueil** illustré (voitures rouge et jaune, titre animé) : emplacement du code à 4 chiffres (connexion bientôt disponible) et bouton « Jouer en invité ».
 - **Cartes** recomposées : voiture de 3/4 avant DEVANT, robot de face DERRIÈRE. Tant que le robot n'est pas découvert, les cartes et le menu montrent la voiture seule.
