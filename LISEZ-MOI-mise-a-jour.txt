@@ -1,0 +1,11 @@
+Mise à jour Lexicourse v0.11 — où copier chaque fichier
+
+index.html                    -> à la racine du dépôt (jeu prêt à publier : accueil, hub, tutoriel, pause, noms grecs/latins)
+src/template.html             -> remplace le modèle utilisé par src/tools/build.py (seul le code du jeu a changé)
+src/noms-cartes.json          -> à reporter dans src/personnages.json : champs "label" (nouveau nom) et "ety" (origine du nom) de chaque personnage
+src/tools/recolor.py          -> nouvel outil de recoloration (pas encore branché au build)
+CHANGELOG.md                  -> remplace l'ancien
+docs/journal-de-bord.md       -> remplace l'ancien
+docs/cartes-a-valider.md      -> nouveau : tableau des cartes en attente de validation
+
+Attention : si tu relances build.py avant d'avoir reporté label/ety dans personnages.json, les anciens noms reviennent.

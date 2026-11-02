@@ -1,0 +1,46 @@
+{
+ "rouge": {
+  "label": "Pyros",
+  "ety": "du grec « pûr », le feu (pyromane, pyrotechnie)"
+ },
+ "jaune": {
+  "label": "Électron",
+  "ety": "du grec « êlektron », l’ambre jaune (électricité)"
+ },
+ "camion": {
+  "label": "Colosse",
+  "ety": "du grec « kolossos », statue géante (colossal)"
+ },
+ "moto": {
+  "label": "Nox",
+  "ety": "du latin « nox », la nuit (nocturne)"
+ },
+ "moto-verte": {
+  "label": "Dynamis",
+  "ety": "du grec « dunamis », la force, la puissance (dynamique, dynamite)"
+ },
+ "citadine": {
+  "label": "Candide",
+  "ety": "du latin « candidus », d’un blanc éclatant (candidat : vêtu de blanc)"
+ },
+ "f1": {
+  "label": "Velox",
+  "ety": "du latin « velox », rapide (vélocité, vélo)"
+ },
+ "monster-truck": {
+  "label": "Titan",
+  "ety": "les Titans, géants de la mythologie grecque (titanesque)"
+ },
+ "camping-car": {
+  "label": "Philia",
+  "ety": "du grec « philia », l’amitié, l’amour (philosophie, philanthrope)"
+ },
+ "berline": {
+  "label": "Umbra",
+  "ety": "du latin « umbra », l’ombre (ombrage, pénombre)"
+ },
+ "voiture-bleue": {
+  "label": "Aqua",
+  "ety": "du latin « aqua », l’eau (aquarium, aqueduc)"
+ }
+}

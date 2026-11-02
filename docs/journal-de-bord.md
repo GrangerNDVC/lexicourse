@@ -25,6 +25,11 @@
 - 01/11 — Cartes : le robot est DEVANT et la voiture (3/4 avant) DERRIÈRE, comme sur les cartes d'origine (annule la décision du 30/10).
 - 01/11 — Bug de fin de course corrigé (rendu hors piste qui arrêtait la boucle) ; la boucle de jeu est maintenant protégée contre les erreurs.
 - 01/11 — Nouvel ordre : d'abord accueil/hub branchés (tutoriel, courses grisées tant que non débloquées), puis tutoriel avec adversaire ; chaque course aura son entraînement seul avant la course. Nouveaux sprites à venir.
+- 01/11 — Retour à l'accueil possible partout, y compris en course (pause avec confirmation). Parcours : accueil → hub (tutoriel, courses grisées, collection) → tutoriel (entraînement seul, puis course avec adversaire, verrouillée tant que l'entraînement n'est pas terminé).
+- 01/11 — Cartes renommées avec des racines grecques/latines (Pyros, Électron, Colosse, Nox, Dynamis, Candide, Velox, Titan, Philia, Umbra, Aqua) + étymologie dans la vue détaillée. Variantes de couleur à venir : prévoir des noms issus de racines de couleurs.
+- 01/11 — Recoloration par code validée sur la base du scooter rouge (sprite 21), noir compris. Elle s'appliquera à toutes les cartes communes et à certaines rares, mais pas dans toutes les couleurs.
+- 01/11 — Noms grecs et latins validés ; l'explication du nom est affichée dans la Collection (« Le savais-tu ? »).
+- 01/11 — Sprites 12 à 27 reçus en 3 sessions : à intégrer après validation de `docs/cartes-a-valider.md` (étoiles, fichiers manquants).
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).
@@ -35,6 +40,7 @@
 - Collection complète : plus de récompense (à prévoir : monnaie, couleurs, doublons).
 - Moto verte : carte seule, utilise les sprites de la moto noire en attendant ses propres images.
 - Étoiles et types des nouveaux personnages : provisoires.
+- Course avec adversaire du tutoriel : écran branché mais course non jouable (chantier B).
 - Tactile non testé ; pas de son ; pas d'adversaires.
 
 ## Idées reportées

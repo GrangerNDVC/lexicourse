@@ -1,5 +1,16 @@
 # Journal des versions
 
+## v0.11 (origine des noms)
+- **« Le savais-tu ? »** : l'explication du nom grec ou latin de chaque pilote s'affiche dans la vue détaillée de la Collection et à l'ouverture d'une nouvelle carte (champ `ety` de `src/personnages.json`).
+- Nouvel outil `src/tools/recolor.py` : recoloration par code des pixels rouges d'une base (12 couleurs validées : rouge, bleu, turquoise, vert, jaune, orange, violet, rose, blanc, gris, noir, menthe, lavande). Pas encore branché au build.
+
+## v0.10 (accueil, hub, tutoriel, pause)
+- **Pause en course** : bouton ⏸ en haut à gauche (ou Échap) → REPRENDRE ou ACCUEIL (la course en cours est abandonnée, les cartes sont conservées). `H` = accueil depuis la pause.
+- **Bouton « ⌂ Accueil »** sur le hub, le tutoriel, le choix du pilote et la collection.
+- **Nouveau parcours** : Accueil → **Hub** (Tutoriel · Courses grisées « bientôt » · Collection) → **Tutoriel** (1 · Entraînement seul · 2 · Course contre un adversaire, verrouillée tant que l'entraînement n'est pas terminé, adversaire à venir) → choix du pilote → course → résultats → retour au tutoriel (✔ Terminé).
+- **Noms des cartes** (racines grecques et latines) : Pyros, Électron, Colosse, Nox, Dynamis, Candide, Velox, Titan, Philia, Umbra, Aqua ; l'origine du nom s'affiche dans la vue détaillée de la collection (champ `ety`). À reporter dans `src/personnages.json` (voir `noms-cartes.json`).
+- La Collection revient à l'écran d'où on l'a ouverte.
+
 ## v0.9.1 (correctif)
 - **Bug corrigé : écran figé en fin de course** (décor, véhicule et boutons disparaissent, plus aucune commande). Cause : à l'arrivée, la position dépassait la longueur de la piste et le rendu plantait, ce qui arrêtait toute la boucle du jeu. Corrections : position bornée à l'arrivée et au rendu ; la boucle ne s'arrête plus jamais (une erreur est écrite dans la console, le jeu continue).
 - **Cartes** : le robot est de nouveau DEVANT et la voiture (3/4 avant) DERRIÈRE (`src/tools/cartes.py`). À prendre en compte en relançant `python src/tools/build.py` avec les images sources.
