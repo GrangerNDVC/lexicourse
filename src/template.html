@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.11 — accueil, hub, tutoriel, pause, origine des noms</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.12 — progression des cartes</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
 <canvas id="c" width="960" height="540"></canvas>
@@ -35,17 +35,31 @@ const newS=gt=>Object.assign(gt,{sp:1,c:Math.random()*4|0,t:pickT(),done:0});
 const say=(t,o)=>msg={t,life:4.5,ok:o};
 
 // ===== PROFIL ET COLLECTION : sauvegarde dans le navigateur + Firebase si une configuration est fournie =====
-const SK='lexicourse_v1',WIN_PCT=.7,PITY=3;   // carte à la fin d'une course si ≥ 70 % de bonnes réponses (2 si sans-faute) ; carte garantie après 3 courses sans carte — règles provisoires
-const RV={depart:-1,commune:0,rare:1,epique:2,extra:3},RW=[6,3,1,0],RP=[0,4,3,2],RN=['Commune','Rare','Épique','Extra-rare'],RC=['#8fb8ff','#d78bff','#ffc23d','#ff6bd6'],rar=i=>RV[CH[i].rarete];   // la rareté de chaque carte est choisie dans src/personnages.json ; RW = tirage normal, RP = tirage « sans-faute » (seul moyen d'obtenir les extra-rares)
+const SK='lexicourse_v1',WIN_PCT=.7,PITY=3;   // WIN_PCT : % de bonnes réponses pour avoir une chance de carte ; PITY : carte garantie après 3 courses réussies sans carte
+// ===== PROGRESSION DES CARTES : tous les réglages sont ici =====
+const PR={base:[70,27,3],      // chances de base (%) : commune, rare, extra-rare
+  luckRare:10,luckExtra:6,     // gain (points de %) par « point de chance » (beau score, sans-faute, adversaire battu)
+  pityRare:6,pityExtra:1.5,    // gain par tirage sans rare / sans extra-rare (la malchance est compensée)
+  caps:[100,60,35],            // plafonds (%) rare et extra-rare
+  chance:.5,chanceLuck:.15,    // chance d'avoir une carte après une course réussie, + par point de chance
+  goodAcc:.85};                // seuil de « belle course »
+const RV={depart:-1,commune:0,rare:1,epique:1,extra:2},RN=['Commune','Rare','Extra-rare'],RC=['#8fb8ff','#d78bff','#ff6bd6'],rar=i=>RV[CH[i].rarete],tierOf=i=>RV[CH[i].rarete];   // la rareté de chaque carte est choisie dans src/personnages.json ("epique" compte comme rare)
 let prof={owned:[],ok:0,tot:0,pseudo:'',classe:''},cloud=null;
 try{Object.assign(prof,JSON.parse(localStorage.getItem(SK)||'{}'))}catch(e){}
 function save(){prof.passed=passed;if(CH.length)prof.cartes=CH.filter((c,i)=>prof.owned[i]).map(c=>c.id);try{localStorage.setItem(SK,JSON.stringify(prof,(k,v)=>k=='owned'?undefined:v))}catch(e){}if(cloud)cloud.push()}
-const pool=T=>CH.map((c,i)=>i).filter(i=>!prof.owned[i]&&rar(i)>=0&&T[rar(i)]>0);
-function draw(perfect){let T=perfect?RP:RW,l=pool(T);if(!l.length){T=RW;l=pool(T)}
-  if(!l.length&&!perfect&&pool(RP).length){say('Il reste des cartes rares : elles se gagnent avec un sans-faute !',1);return false}
-  if(!l.length){say('Collection complète ! Bravo !',1);return false}
-  let t=l.reduce((a,i)=>a+T[rar(i)],0)*Math.random(),k=l[0];for(const i of l){t-=T[rar(i)];if(t<=0){k=i;break}}
-  prof.owned[k]=1;save();reveal={i:k,t:0};return true}
+const own=()=>prof.owned.reduce((a,b)=>a+b,0);
+function tierWeights(luck){const dR=prof.dryR|0,dE=prof.dryE|0,x=Math.min(PR.caps[2],PR.base[2]+PR.luckExtra*luck+PR.pityExtra*dE),r=Math.min(PR.caps[1],PR.base[1]+PR.luckRare*luck+PR.pityRare*dR);return[Math.max(0,100-x-r),r,x]}
+function pickCard(luck,force,not){const by=[0,1,2].map(t=>CH.map((c,i)=>i).filter(i=>!prof.owned[i]&&tierOf(i)==t&&CH[i].id!=not));
+  let w=force!=null?[0,1,2].map(t=>t==force?1:0):tierWeights(luck);w=w.map((x,t)=>by[t].length?x:0);
+  if(!w.some(x=>x>0)){w=by.map(l=>l.length?1:0);if(!w.some(x=>x>0))return -1}
+  let r=Math.random()*w.reduce((a,b)=>a+b,0),t=0;for(;t<2;t++){r-=w[t];if(r<=0)break}
+  const l=by[t];return l[Math.floor(Math.random()*l.length)]}
+function grant(k){prof.owned[k]=1;const t=tierOf(k);prof.dryR=t>=1?0:(prof.dryR|0)+1;prof.dryE=t>=2?0:(prof.dryE|0)+1;save();reveal={i:k,t:0}}
+function draw(rq){const k=pickCard(rq.luck|0,rq.force);if(k<0){say('Collection complète ! Bravo !',1);return false}grant(k);return true}
+// Adversaire-carte (courses, chantier B) : une carte que l'élève ne possède pas, jamais la même deux courses de suite ; plus elle est rare, plus elle est dure à battre ; battue = obtenue
+let rivalWon=0;const rivalPower=i=>[.45,.7,.95][tierOf(i)];
+function pickRival(luck){const k=pickCard(luck|0,null,prof.lastRival);if(k>=0)prof.lastRival=CH[k].id;return k}
+function winRival(i){rivalWon=1;grant(i)}
 const STC={1:'#8fb8ff',2:'#8fb8ff',3:'#d78bff',4:'#ffc23d',5:'#ff6bd6'},TN={feu:'Feu',electrique:'Électrique',energie:'Énergie',eau:'Eau',force:'Force',glace:'Glace',love:'Amour',nature:'Nature',tenebre:'Ténèbre'};
 function drawCard(c,x,y,w,h,own){g.save();g.textAlign='left';g.beginPath();g.roundRect(x,y,w,h,w*.06);g.clip();
   if(own&&c.cardImg){g.drawImage(prof.robot?c.cardImg:(c.cardCarImg||c.cardImg),x,y,w,h);const f=h*.07,sx=x+w*.06,sy=y+h*.03;g.font='bold '+f+'px system-ui';g.textBaseline='top';g.lineWidth=f*.14;g.strokeStyle='#000';g.fillStyle='#ffc23d';const st='★'.repeat(c.etoiles);g.strokeText(st,sx,sy);g.fillText(st,sx,sy);g.textBaseline='alphabetic';   // étoiles en haut à gauche
@@ -76,7 +90,7 @@ async function init(){
   for(const o of A.roadside){o.img=await load(o.u);o.ww=o.hh*o.img.width/o.img.height}
   for(const o of A.obst){o.img=await load(o.u);OB[o.n]=o}
   for(const c of A.chars){for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load));if(c.card)c.cardImg=await load(c.card);if(c.cardCar)c.cardCarImg=await load(c.cardCar)}CH=A.chars;HOME=await load(A.home);const OLD=['rouge','jaune','camion','moto','citadine','f1','monster-truck','camping-car'];if(!prof.cartes)prof.cartes=OLD.filter((id,i)=>(prof.owned||[])[i]);   // reprise des anciennes sauvegardes
-  prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
+  if(prof.ver!==2){prof.cartes=[];prof.tuto=0;prof.dry=0;prof.dryR=0;prof.dryE=0;prof.ver=2}prof.cartes=prof.cartes||[];prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
   const by=n=>A.roadside.filter(o=>o.n.startsWith(n)),pool=['pylon','lamp','billboard','house','tree','tree','light'];
   for(let i=8;i<N;i+=8)for(const side of[-1,1]){const l=by(pool[rnd()*pool.length|0]);segs[i].spr.push({o:l[rnd()*l.length|0],off:side*(1.35+rnd()*1.3)})}
   for(let i=0;i<N;i+=5){const s=segs[i];
@@ -106,10 +120,11 @@ cv.addEventListener('pointerdown',e=>{if(surprise){if(surprise.t>2.4)surprise=nu
 // ===== DÉROULEMENT : menu (choix du pilote) → course → résultats → carte éventuelle → menu =====
 function startRace(){pz=0;pos=0;x=LX[1];ln=1;v=0;lapT=0;spOn=0;spT=0;form=0;tr.t=0;act.t=0;cool=0;boosting=0;gauge=0;slowT=0;lapOk=0;lapTot=0;gates.forEach(t=>t.sp?newS(t):newQ(t));
   say('Place-toi sur la voie du bon mot. Le bloc ne disparaît que sur la bonne réponse !',1);mode='race'}
-function endRace(){const acc=lapTot?lapOk/lapTot:0,perfect=lapTot>=3&&acc==1;pending=[];if(lapTot>=3)prof.tuto=1;   // entraînement seul terminé
-  if(lapTot>=3&&acc>=WIN_PCT)pending.push(0);if(perfect)pending.push(1);
-  prof.dry=(prof.dry|0)+1;if(!pending.length&&prof.dry>=PITY&&lapTot>=3)pending.push(0);if(pending.length)prof.dry=0;prof.races=(prof.races|0)+1;
-  res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect};mode='result';pos=Math.min(pos,LEN-1);spOn=0;boosting=0;save()}
+function endRace(){const acc=lapTot?lapOk/lapTot:0,perfect=lapTot>=3&&acc==1,done=lapTot>=3,luck=(perfect?2:acc>=PR.goodAcc?1:0)+(rivalWon?2:0);pending=[];let first=0;
+  if(done&&!prof.tuto){prof.tuto=1;first=1;prof.dry=0;pending.push({force:0,luck})}   // fin du tutoriel 1 : une carte commune garantie
+  else if(done&&acc>=WIN_PCT){prof.dry=(prof.dry|0)+1;if(prof.dry>=PITY||Math.random()<Math.min(1,PR.chance+PR.chanceLuck*luck)){pending.push({luck});prof.dry=0}}
+  prof.races=(prof.races|0)+1;
+  res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect,first,luck};mode='result';pos=Math.min(pos,LEN-1);spOn=0;boosting=0;save()}
 function nextReward(){while(pending.length){if(draw(pending.shift()))return}mode='tuto';v=0}
 function goHome(){pz=0;boosting=0;v=0;detail=-1;mode='home'}
 function openCol(b){colBack=b;mode='collection';colPage=0;detail=-1}
@@ -120,8 +135,8 @@ const famCur=f=>f.v.includes(car)?car:f.v.find(i=>prof.owned[i]);
 function pickFam(f){const c=famCur(f);if(c===undefined)say('Carte à gagner au hasard après une course réussie !',0);else pick(c)}
 function menu(){g.fillStyle='rgba(3,6,25,.86)';g.fillRect(0,0,W,H);g.textAlign='center';
   g.fillStyle='#22e6ff';g.font='bold 44px system-ui';g.fillText('LEXICOURSE',W/2,52);g.fillStyle='#9fe8ff';g.font='16px system-ui';g.fillText('Choisis ton pilote, puis lance la course'+(prof.pseudo?'  ·  '+prof.pseudo:''),W/2,78);
-  btns=[];const np=Math.max(1,Math.ceil(FAM.length/8));pageM=Math.min(pageM,np-1);
-  FAM.slice(pageM*8,pageM*8+8).forEach((f,n)=>{const x0=62+(n%4)*212,y0=106+(n>>2)*182,cur=famCur(f),any=cur!==undefined,sel=f.v.includes(car);
+  btns=[];const FL=FAM.filter(f=>f.v.some(i=>prof.owned[i])),np=Math.max(1,Math.ceil(FL.length/8));pageM=Math.min(pageM,np-1);
+  FL.slice(pageM*8,pageM*8+8).forEach((f,n)=>{const x0=62+(n%4)*212,y0=106+(n>>2)*182,cur=famCur(f),any=cur!==undefined,sel=f.v.includes(car);
     f.v.forEach((i,j)=>btns.push({x:x0+100-(f.v.length-1)*11+j*22-11,y:y0+125,w:22,h:22,f:()=>pick(i)}));btns.push({x:x0,y:y0,w:200,h:170,f:()=>pickFam(f)});
     const r=any?rar(cur):0;g.fillStyle=any?'#0b1038':'#1a1f38';g.strokeStyle=sel?'#fff':(any?RC[Math.max(0,r)]:'#2a2f45');g.lineWidth=sel?5:3;g.beginPath();g.roundRect(x0,y0,200,170,16);g.fill();g.stroke();
     if(any){const c=CH[cur],im=prof.robot?c.tr[c.tr.length-1]:c.tr[0],k=Math.min(92/im.height,150/im.width);g.drawImage(im,x0+100-im.width*k/2,y0+8,im.width*k,im.height*k);g.fillStyle='#fff';g.font='bold 14px system-ui';g.fillText(c.label,x0+100,y0+118);
@@ -131,17 +146,22 @@ function menu(){g.fillStyle='rgba(3,6,25,.86)';g.fillRect(0,0,W,H);g.textAlign='
   if(np>1){btns.push({x:12,y:230,w:34,h:70,f:()=>pageM=Math.max(0,pageM-1)},{x:W-46,y:230,w:34,h:70,f:()=>pageM=Math.min(np-1,pageM+1)});g.fillStyle='#22e6ff';g.font='bold 40px system-ui';g.fillText('‹',29,278);g.fillText('›',W-29,278);g.font='13px system-ui';g.fillStyle='#9fe8ff';g.fillText('Page '+(pageM+1)+'/'+np,W/2+190,H-30)}
   if(CH[car].part){g.fillStyle='#ffc23d';g.font='13px system-ui';g.fillText('Particularité : '+CH[car].part,W/2,H-70)}
   btn(W/2-120,H-62,240,46,'COURSE',startRace);btn(20,H-62,190,46,'COLLECTION',()=>openCol('menu'),'#ffc23d');btn(W-210,H-62,190,46,'RETOUR',()=>mode='tuto','#8f9ac2');homeBtn();
-  g.textAlign='left';g.fillStyle='#9fe8ff';g.font='13px system-ui';g.fillText('Cartes '+prof.owned.reduce((a,b)=>a+b,0)+'/'+CH.length,20,H-4);
+  g.textAlign='left';g.fillStyle='#9fe8ff';g.font='13px system-ui';g.fillText(own()+' cartes',20,H-4);
   if(msg.life>0){g.textAlign='center';g.fillStyle=msg.ok?'#7dffb0':'#ff8a9a';g.font='bold 15px system-ui';g.fillText(msg.t,W/2,98)}g.textAlign='left'}
+let colSort='rar';const TYPES=['feu','electrique','energie','eau','force','glace','love','nature','tenebre'];
+function colList(){const l=CH.map((c,i)=>i).filter(i=>prof.owned[i]),ty=i=>TYPES.indexOf(CH[i].type),st=i=>CH[i].etoiles;
+  return l.sort(colSort=='rar'?(a,b)=>st(b)-st(a)||ty(a)-ty(b)||a-b:(a,b)=>ty(a)-ty(b)||st(b)-st(a)||a-b)}
+function chips(){g.textAlign='center';g.font='bold 14px system-ui';g.fillStyle='#9fe8ff';g.fillText('Trier par :',W/2-150,91);
+  [['rar','★ Rareté'],['dom','Domaine']].forEach(([k,t],n)=>{const x0=W/2-95+n*110,on=colSort==k;btns.push({x:x0,y:74,w:100,h:24,f:()=>{colSort=k;colPage=0}});g.fillStyle=on?'#ffc23d':'rgba(255,255,255,.1)';g.beginPath();g.roundRect(x0,74,100,24,12);g.fill();g.fillStyle=on?'#021':'#fff';g.fillText(t,x0+50,91)})}
 function collection(){g.fillStyle='rgba(3,6,25,.94)';g.fillRect(0,0,W,H);g.textAlign='center';g.fillStyle='#ffc23d';g.font='bold 36px system-ui';g.fillText('MA COLLECTION',W/2,44);
-  g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText(prof.owned.reduce((a,b)=>a+b,0)+' cartes sur '+CH.length+' · clique sur une carte pour la voir en grand',W/2,68);btns=[];
-  const per=12,np=Math.max(1,Math.ceil(CH.length/per));colPage=Math.min(colPage,np-1);
-  CH.slice(colPage*per,colPage*per+per).forEach((c,n)=>{const i=colPage*per+n,x0=45+(n%6)*150,y0=84+(n/6|0)*198,o=prof.owned[i];btns.push({x:x0,y:y0,w:120,h:180,f:()=>o?detail=i:say('Carte à gagner après une course réussie !',0)});drawCard(c,x0,y0,120,180,o)});
+  g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText(own()+' carte'+(own()>1?'s':'')+' · clique sur une carte pour la voir en grand',W/2,66);btns=[];chips();
+  const L=colList(),per=12,np=Math.max(1,Math.ceil(L.length/per));colPage=Math.min(colPage,np-1);
+  L.slice(colPage*per,colPage*per+per).forEach((i,n)=>{const c=CH[i],x0=45+(n%6)*150,y0=104+(n/6|0)*188;btns.push({x:x0,y:y0,w:120,h:180,f:()=>detail=i});drawCard(c,x0,y0,120,180,1)});
   if(np>1){btns.push({x:12,y:200,w:30,h:70,f:()=>colPage=Math.max(0,colPage-1)},{x:W-42,y:200,w:30,h:70,f:()=>colPage=Math.min(np-1,colPage+1)});g.fillStyle='#22e6ff';g.font='bold 40px system-ui';g.fillText('‹',27,250);g.fillText('›',W-27,250);g.font='13px system-ui';g.fillText('Page '+(colPage+1)+'/'+np,W/2+190,H-26)}
   btn(W/2-100,H-60,200,44,'RETOUR',()=>mode=colBack);homeBtn();
   if(msg.life>0){g.fillStyle=msg.ok?'#7dffb0':'#ff8a9a';g.font='bold 15px system-ui';g.fillText(msg.t,W/2,H-70)}
   if(detail>=0){const c=CH[detail];g.fillStyle='rgba(3,6,25,.95)';g.fillRect(0,0,W,H);drawCard(c,60,40,330,495-40,1);g.textAlign='left';g.fillStyle='#fff';g.font='bold 34px system-ui';g.fillText(c.label,430,100);
-    g.fillStyle=STC[c.etoiles]||'#fff';g.font='bold 28px system-ui';g.fillText('★'.repeat(c.etoiles),430,145);g.fillStyle='#9fe8ff';g.font='20px system-ui';g.fillText('Type : '+(TN[c.type]||c.type),430,190);
+    g.fillStyle=STC[c.etoiles]||'#fff';g.font='bold 28px system-ui';g.fillText('★'.repeat(c.etoiles),430,145);g.fillStyle='#9fe8ff';g.font='20px system-ui';g.fillText('Type : '+(TN[c.type]||c.type)+'  ·  '+(rar(detail)<0?'Carte de départ':RN[rar(detail)]),430,190);
     g.fillStyle='#ffc23d';g.font='bold 20px system-ui';g.fillText('Particularité',430,245);g.fillStyle='#fff';g.font='20px system-ui';wrap(c.part||'—',480).forEach((t,i)=>g.fillText(t,430,278+i*28));
     if(c.ety){g.fillStyle='#ffc23d';g.font='bold 20px system-ui';g.fillText('Le savais-tu ?',430,385);g.fillStyle='#fff';g.font='italic 19px system-ui';wrap(etyTxt(c),480).forEach((tx,i)=>g.fillText(tx,430,415+i*26))}
     g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText('Clique pour fermer',430,H-30)}g.textAlign='left'}
@@ -164,8 +184,8 @@ function resultScreen(){g.fillStyle='rgba(3,6,25,.92)';g.fillRect(0,0,W,H);g.tex
   g.fillStyle='#22e6ff';g.font='bold 42px system-ui';g.fillText('Course terminée !',W/2,110);g.fillStyle='#fff';g.font='bold 26px system-ui';
   g.fillText(res.ok+' bonnes réponses sur '+res.tot+' ('+Math.round(res.acc*100)+' %)',W/2,180);g.fillText('Sprint final : '+res.sp.toFixed(1)+' s  ·  temps total : '+res.t.toFixed(1)+' s',W/2,224);
   g.font='bold 24px system-ui';g.fillStyle=res.cards?'#ffc23d':'#9fe8ff';
-  g.fillText(res.perfect?'SANS-FAUTE ! 2 cartes à découvrir, avec une chance d\'extra-rare !':res.cards?'Récompense : '+res.cards+' carte'+(res.cards>1?'s':'')+' à découvrir !':'Pas de carte cette fois : vise '+Math.round(WIN_PCT*100)+' % de bonnes réponses.',W/2,292);
-  if(!res.cards){g.font='16px system-ui';g.fillStyle='#9fe8ff';g.fillText('Carte garantie dans '+Math.max(1,PITY-(prof.dry|0))+' course(s) au maximum.',W/2,324)}
+  g.fillText(res.first?'TUTORIEL TERMINÉ ! Une carte t\'attend !':res.cards?(res.luck>=2?'SUPER COURSE ! Plus de chances de carte rare !':'Récompense : une carte à découvrir !'):'Pas de carte cette fois : vise '+Math.round(WIN_PCT*100)+' % de bonnes réponses.',W/2,292);
+  if(!res.cards&&res.tot>=3&&res.acc>=WIN_PCT){g.font='16px system-ui';g.fillStyle='#9fe8ff';g.fillText('Carte garantie dans '+Math.max(1,PITY-(prof.dry|0))+' course(s) réussie(s) au maximum.',W/2,324)}
   btn(W/2-120,400,240,50,res.cards?'OUVRIR':'CONTINUER',nextReward);g.textAlign='left'}
 
 
@@ -184,7 +204,7 @@ function hub(){hb+=1/60;g.drawImage(HOME,0,0,W,H);g.fillStyle='rgba(3,6,25,.82)'
   const y0=140,w=270,h=290,gap=30,x0=(W-3*w-2*gap)/2,nb=prof.owned.reduce((a,b)=>a+b,0);
   tile(x0,y0,w,h,{c:'#22e6ff',icon:'▶',t:'TUTORIEL',d:'Apprends les consignes en t’entraînant seul, puis affronte un adversaire.',tag:prof.tuto?'✔ Entraînement terminé':'À faire en premier',f:()=>mode='tuto'});
   tile(x0+w+gap,y0,w,h,{lock:1,t:'COURSES',d:'Les pistes thématiques : nature des mots, fonctions, synonymes…',tag:'Bientôt disponible',f:()=>say('Les courses se débloqueront bientôt : commence par le tutoriel !',0)});
-  tile(x0+2*(w+gap),y0,w,h,{c:'#ffc23d',icon:'★',t:'COLLECTION',d:'Retrouve toutes tes cartes de pilotes et leur histoire.',tag:nb+' / '+CH.length+' cartes',f:()=>openCol('hub')});
+  tile(x0+2*(w+gap),y0,w,h,{c:'#ffc23d',icon:'★',t:'COLLECTION',d:'Retrouve toutes tes cartes de pilotes et leur histoire.',tag:nb+' carte'+(nb>1?'s':''),f:()=>openCol('hub')});
   if(msg.life>0){g.textAlign='center';g.fillStyle=msg.ok?'#7dffb0':'#ff8a9a';g.font='bold 16px system-ui';g.fillText(msg.t,W/2,H-34);g.textAlign='left'}
   homeBtn()}
 function tuto(){g.drawImage(HOME,0,0,W,H);g.fillStyle='rgba(3,6,25,.84)';g.fillRect(0,0,W,H);btns=[];g.textAlign='center';
@@ -263,7 +283,7 @@ function hud(){
   if(ng){g.font='bold 27px system-ui,sans-serif';const L=wrap(ng.q,770),bh=18+L.length*34;box(W/2-400,10,800,bh,'rgba(5,12,40,.9)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,44+i*34));
     g.font='bold 24px system-ui,sans-serif';ng.w.forEach((w,i)=>{const cx=W/2-400+i*200;box(cx,bh+16,192,44,i==ln?(lk()?'#c8720e':'#0e7fb8'):'rgba(5,12,40,.9)');g.fillStyle='#fff';g.fillText(w,cx+96,bh+46)});g.textAlign='left';ey=bh+68}
   if(msg.life>0){g.font='bold 17px system-ui,sans-serif';const L=wrap(msg.t,740),y=ey;box(W/2-390,y,780,14+L.length*24,msg.ok?'rgba(10,110,60,.92)':'rgba(150,25,40,.92)');g.fillStyle='#fff';g.textAlign='center';L.forEach((t,i)=>g.fillText(t,W/2,y+26+i*24));g.textAlign='left'}
-  btns=[];g.font='13px system-ui,sans-serif';g.fillStyle='#9fe8ff';g.textAlign='right';g.fillText(CH[car].label+'  ·  cartes '+prof.owned.reduce((a,b)=>a+b,0)+'/'+CH.length,W-20,22);g.textAlign='left';
+  btns=[];g.font='13px system-ui,sans-serif';g.fillStyle='#9fe8ff';g.textAlign='right';g.fillText(CH[car].label+'  ·  '+own()+' cartes',W-20,22);g.textAlign='left';
   btns.push({x:14,y:12,w:52,h:52,f:()=>{pz=1;boosting=0}});g.fillStyle='rgba(5,12,40,.88)';g.strokeStyle='#22e6ff';g.lineWidth=3;g.beginPath();g.roundRect(14,12,52,52,12);g.fill();g.stroke();g.fillStyle='#fff';g.fillRect(31,26,6,24);g.fillRect(43,26,6,24);   // bouton pause
   const bx=W-86,by=H-190,ready=robotOn&&cool<=0&&act.t<=0;btns.push({x:bx-46,y:by-46,w:92,h:92,f:toggle});
   g.fillStyle=ready?'rgba(5,40,70,.9)':'rgba(40,40,50,.85)';g.beginPath();g.arc(bx,by,46,0,7);g.fill();g.strokeStyle=ready?'#22e6ff':'#667';g.lineWidth=4;g.stroke();

@@ -30,6 +30,9 @@
 - 01/11 — Recoloration par code validée sur la base du scooter rouge (sprite 21), noir compris. Elle s'appliquera à toutes les cartes communes et à certaines rares, mais pas dans toutes les couleurs.
 - 01/11 — Noms grecs et latins validés ; l'explication du nom est affichée dans la Collection (« Le savais-tu ? »).
 - 01/11 — Sprites 12 à 27 reçus en 3 sessions : à intégrer après validation de `docs/cartes-a-valider.md` (étoiles, fichiers manquants).
+- 02/11 — Départ avec deux cartes seulement ; la Collection n'affiche que les cartes possédées (pas de « ? »), triable par rareté ou domaine.
+- 02/11 — Tutoriel 1 terminé = carte commune ; tutoriel 2 terminé = carte rare ; les beaux exploits (score boosté, sans-faute, adversaire battu) augmentent les chances d'une bonne carte, les extra-rares étant un peu forcées après un bon score.
+- 02/11 — Dans les courses, une carte non possédée s'invite en adversaire (différente d'une course à l'autre) ; plus elle est forte, plus elle est dure à battre ; battue, on l'obtient.
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).

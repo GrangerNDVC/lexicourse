@@ -1,5 +1,14 @@
 # Journal des versions
 
+## v0.12 (progression des cartes)
+- **Départ avec deux cartes seulement** (Pyros, Électron) ; les autres arrivent au fil du jeu. Les anciennes sauvegardes de test sont remises à zéro (cartes et tutoriel) : plus de Colosse ni d'Umbra d'office.
+- **Collection** : seulement les cartes possédées, plus d'emplacements « ? », compteur « n cartes », **tri par rareté (étoiles) ou par domaine** (feu, électrique, énergie, eau, force, glace, amour, nature, ténèbre), pages automatiques. La rareté s'affiche dans la vue détaillée.
+- **Choix du pilote** : seuls les pilotes possédés sont proposés.
+- **Récompenses** : fin du tutoriel 1 = une carte **commune** garantie (une seule fois). Ensuite, après une course réussie (≥ 70 %), une carte est possible ; un beau score, un sans-faute ou un adversaire battu augmentent les chances de **rare** et d'**extra-rare** ; la malchance est compensée au fil des tirages ; carte garantie après 3 courses réussies sans carte. Tous les réglages sont dans le bloc `PR` du code.
+- **Raretés** : commune, rare, extra-rare (« épique » compte désormais comme rare).
+- **Adversaires-cartes** (prêts pour le chantier B, pas encore jouables) : `pickRival`, `rivalPower`, `winRival`.
+- Détails des règles : `docs/progression-cartes.md`.
+
 ## v0.11 (origine des noms)
 - **« Le savais-tu ? »** : l'explication du nom grec ou latin de chaque pilote s'affiche dans la vue détaillée de la Collection et à l'ouverture d'une nouvelle carte (champ `ety` de `src/personnages.json`).
 - Nouvel outil `src/tools/recolor.py` : recoloration par code des pixels rouges d'une base (12 couleurs validées : rouge, bleu, turquoise, vert, jaune, orange, violet, rose, blanc, gris, noir, menthe, lavande). Pas encore branché au build.
