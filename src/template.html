@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.12 — progression des cartes</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.15 — trois modèles recolorables</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
 <canvas id="c" width="960" height="540"></canvas>
@@ -85,11 +85,19 @@ function askIdentity(){if(!A.firebase||prof.pseudo)return;paused=1;const d=docum
 
 // ===== CHARGEMENT =====
 const load=u=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=u});
+const lazy=(o,k,f)=>Object.defineProperty(o,k,{configurable:true,get(){const v=f();Object.defineProperty(o,k,{value:v,configurable:true});return v}});
+function tint(im,rc){const cv=document.createElement('canvas');cv.width=im.width;cv.height=im.height;const x=cv.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,cv.width,cv.height),p=d.data,[bh,th,ts,tm,ta]=rc;   // recolore les pixels de teinte « bh » : nouvelle teinte, saturation, luminosité
+  for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;let r=p[i]/255,g=p[i+1]/255,b=p[i+2]/255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),df=mx-mn;let s=mx?df/mx:0,v=mx;if(s<=.35||v<=.25)continue;
+    const h=df==0?0:mx==r?(((g-b)/df)%6+6)%6/6:mx==g?((b-r)/df+2)/6:((r-g)/df+4)/6;let dd=Math.abs(h-bh);dd=Math.min(dd,1-dd);if(dd>=.07)continue;
+    s=Math.min(1,s*ts);v=Math.min(1,Math.max(0,v*tm+ta));const k=th*6,m=Math.floor(k)%6,f=k-Math.floor(k),pp=v*(1-s),q=v*(1-s*f),tt=v*(1-s*(1-f));
+    [r,g,b]=[[v,tt,pp],[q,v,pp],[pp,v,tt],[pp,q,v],[tt,pp,v],[v,pp,q]][m];p[i]=r*255;p[i+1]=g*255;p[i+2]=b*255}
+  x.putImageData(d,0,0);return cv}
 async function init(){
   BG=await load(A.bg);
   for(const o of A.roadside){o.img=await load(o.u);o.ww=o.hh*o.img.width/o.img.height}
   for(const o of A.obst){o.img=await load(o.u);OB[o.n]=o}
-  for(const c of A.chars){for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load));if(c.card)c.cardImg=await load(c.card);if(c.cardCar)c.cardCarImg=await load(c.cardCar)}CH=A.chars;HOME=await load(A.home);const OLD=['rouge','jaune','camion','moto','citadine','f1','monster-truck','camping-car'];if(!prof.cartes)prof.cartes=OLD.filter((id,i)=>(prof.owned||[])[i]);   // reprise des anciennes sauvegardes
+  for(const c of A.chars){if(!c.base)for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load));if(c.card)c.cardImg=await load(c.card);if(c.cardCar)c.cardCarImg=await load(c.cardCar)}for(const c of A.chars)if(c.base){const b=A.chars.find(x=>x.id==c.base);for(const k of['tr','jump','step'])lazy(c,k,()=>b[k].map(im=>tint(im,c.rc)))}   // variantes : sprites recolorés à la demande
+  CH=A.chars;HOME=await load(A.home);const OLD=['rouge','jaune','camion','moto','citadine','f1','monster-truck','camping-car'];if(!prof.cartes)prof.cartes=OLD.filter((id,i)=>(prof.owned||[])[i]);   // reprise des anciennes sauvegardes
   if(prof.ver!==2){prof.cartes=[];prof.tuto=0;prof.dry=0;prof.dryR=0;prof.dryE=0;prof.ver=2}prof.cartes=prof.cartes||[];prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
   const by=n=>A.roadside.filter(o=>o.n.startsWith(n)),pool=['pylon','lamp','billboard','house','tree','tree','light'];
   for(let i=8;i<N;i+=8)for(const side of[-1,1]){const l=by(pool[rnd()*pool.length|0]);segs[i].spr.push({o:l[rnd()*l.length|0],off:side*(1.35+rnd()*1.3)})}

@@ -22,13 +22,20 @@ def frames(im,n):
     sz=ndi.sum(al,lab,range(1,k+1));keep=[sl[i] for i in range(k) if sz[i]>0.003*al.size]
     keep=sorted(keep,key=lambda s:s[1].start)[:n]
     return [im.crop((s[1].start,s[0].start,s[1].stop,s[0].stop)) for s in keep]
-def recolor(im,hue,sat=1.0,vmul=1.0,vadd=0.0,grey=False):
+def base_hue(imgs):
+    """Teinte dominante (0 à 1) des pixels bien colorés d'une ou plusieurs images : c'est la « couleur de base » à remplacer."""
+    H=[]
+    for im in imgs:
+        a=np.asarray(im.convert('RGBA')).astype(float);hsv=rgb_to_hsv(a[...,:3]/255);m=(a[...,3]>200)&(hsv[...,1]>.5)&(hsv[...,2]>.35)
+        H.append(np.repeat(hsv[...,0][m],1))
+    h=np.concatenate(H) if H else np.array([0.]);hist=np.bincount((h*100).astype(int)%100,minlength=100).astype(float)
+    hist=np.convolve(np.r_[hist[-3:],hist,hist[:3]],np.ones(5)/5,'same')[3:-3];return (np.argmax(hist)+.5)/100
+def recolor(im,hue,sat=1.0,vmul=1.0,vadd=0.0,grey=False,base=0.0):
+    """Recolore les pixels de teinte « base » (± 0,07) : nouvelle teinte, saturation x sat, luminosité x vmul + vadd."""
     a=np.asarray(im).astype(float);rgb=a[...,:3]/255;al=a[...,3]
     hsv=rgb_to_hsv(rgb);h,s,v=hsv[...,0],hsv[...,1],hsv[...,2]
-    red=((h<0.06)|(h>0.94))&(s>0.35)&(v>0.25)
-    # poids doux selon la saturation pour garder le modelé
-    w=np.where(red,1.0,0.0)
-    w=ndi.gaussian_filter(w,0.6)*(s>0.2)
+    d=np.abs(h-base);d=np.minimum(d,1-d)
+    red=(d<.07)&(s>0.35)&(v>0.25)
     nh=np.where(red,hue,h);ns=np.where(red,np.clip(s*sat,0,1),s);nv=np.where(red,np.clip(v*vmul+vadd,0,1),v)
     out=hsv_to_rgb(np.dstack([nh,ns,nv]))
     res=np.where(red[...,None],out,rgb)
@@ -45,6 +52,8 @@ def main():
     for nm,pr in COUL[1:]:
         recolor(im,*pr).save(os.path.join(out,nm.split(' ')[0].lower()+'.png'))
     print('fait :',out)
+COULEURS={n.split(' ')[0]:p for n,p in COUL if p}
+COULEURS['Rouge']=(0.0,1.0,0.95,0.0)   # utile pour recolorer une base d'une autre couleur en rouge   # Bleu, Turquoise, Vert, Jaune, Orange, Violet, Rose, Blanc, Gris, Noir, Menthe, Lavande
 if __name__=='__main__' and len(__import__('sys').argv)>1:
     main()
 elif __name__=='__main__':

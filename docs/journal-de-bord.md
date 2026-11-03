@@ -33,6 +33,9 @@
 - 02/11 — Départ avec deux cartes seulement ; la Collection n'affiche que les cartes possédées (pas de « ? »), triable par rareté ou domaine.
 - 02/11 — Tutoriel 1 terminé = carte commune ; tutoriel 2 terminé = carte rare ; les beaux exploits (score boosté, sans-faute, adversaire battu) augmentent les chances d'une bonne carte, les extra-rares étant un peu forcées après un bon score.
 - 02/11 — Dans les courses, une carte non possédée s'invite en adversaire (différente d'une course à l'autre) ; plus elle est forte, plus elle est dure à battre ; battue, on l'obtient.
+- 03/11 — Sprites 13 à 27 (sauf 12, 19, 20) intégrés avec étoiles/types provisoires ; sprite 12 abandonné (à refaire). Dépôt allégé fourni pour tests (sans musique ni toutes les images).
+- 03/11 — Modèles recolorables choisis par Julie : sprites 20 (citadine bleue), 21 (scooter) et 22 (hatchback rétro).
+- 03/11 — Recoloration par code branchée au jeu (variantes d'un même modèle, sprites recolorés dans le navigateur). 10 variantes communes ajoutées (scooter et citadine bleue). À décider : quelles couleurs pour quelles rares, et les autres modèles recolorables.
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).
@@ -41,6 +44,7 @@
 - Banque de questions : 9 questions sur 12 ajoutées par l'assistant, à relire.
 - Connexion anonyme liée au navigateur : changement d'appareil = collection vide (code de récupération à prévoir).
 - Collection complète : plus de récompense (à prévoir : monnaie, couleurs, doublons).
+- Saut de Vetus (sprite 22) de petite définition : un peu flou.
 - Moto verte : carte seule, utilise les sprites de la moto noire en attendant ses propres images.
 - Étoiles et types des nouveaux personnages : provisoires.
 - Course avec adversaire du tutoriel : écran branché mais course non jouable (chantier B).

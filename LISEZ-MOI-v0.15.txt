@@ -1,0 +1,13 @@
+Mise à jour Lexicourse v0.15 — où copier chaque fichier
+
+index.html                -> racine du dépôt : jeu complet, 36 pilotes, prêt à publier
+src/personnages.json      -> remplace l'ancien (36 personnages dont 15 variantes de couleur)
+src/template.html         -> remplace l'ancien (recoloration dans le navigateur)
+src/tools/build.py        -> remplace l'ancien
+src/tools/recolor.py      -> remplace l'ancien
+CHANGELOG.md, docs/*      -> remplacent les anciens
+
+Les sources d'images n'ont pas changé depuis la v0.13 (sources-nouveaux-sprites.zip) : les variantes n'ont besoin d'aucune nouvelle image.
+
+Pour ajouter une variante dans personnages.json :
+  {"id":"scooter-orange","nom":"…","ety":"…","variante_de":"scooter","teinte":"Orange","dossier":"scooter","famille":"scooter","couleur":"#ff8a1e","etoiles":2,"type":"force","hauteur":215}

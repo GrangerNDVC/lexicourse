@@ -1,5 +1,20 @@
 # Journal des versions
 
+## v0.15 (trois modèles recolorables)
+- Les modèles recolorables sont maintenant **la citadine bleue (Aqua), le scooter (Formica) et la hatchback rétro (Vetus)**.
+- **5 variantes de Vetus** (communes, provisoires) : Rufa (rouge, feu), Lutea (jaune, électrique), Prasina (vert, nature), Cana (gris, force), Atra (noir, ténèbre). **36 cartes au total.**
+
+## v0.14 (variantes de couleur)
+- **Recoloration branchée** : une entrée de `src/personnages.json` peut être une *variante* d'un modèle (`"variante_de"` + `"teinte"` : Rouge, Bleu, Turquoise, Vert, Jaune, Orange, Violet, Rose, Blanc, Gris, Noir, Menthe ou Lavande). Seuls les pixels de la couleur de base changent ; la carte est recomposée avec le véhicule et le robot recolorés.
+- **Aucun poids en plus** : les sprites d'une variante sont recolorés dans le navigateur, à la demande (fonction `tint`), à partir du modèle. Même résultat que `src/tools/recolor.py` (écart de 1 sur 255).
+- **10 premières variantes communes (2★), provisoires** : scooter Formica (rouge, type feu) → Caerula (bleu), Viridis (vert), Flava (jaune), Rosea (rose), Alba (blanc), Nigra (noir) ; citadine Aqua (bleue) → Erythros (rouge), Xanthos (jaune), Leukos (blanc), Melas (noir). **31 cartes au total.**
+- Le type découle de la couleur (rouge : feu, bleu : eau, vert : nature, jaune : électrique, rose : amour, blanc : glace, noir : ténèbre) : proposition à valider.
+- `recolor.py` fonctionne maintenant avec n'importe quelle couleur de base (`base_hue`).
+## v0.13 (nouveaux pilotes)
+- **10 nouveaux pilotes** : Rhodon, Ferrum, Chloros, Cyanos, Kallista, Vigil, Vetus, Formica, Apis, Fulgur (21 cartes au total). Étoiles, types et particularités **provisoires** (`src/personnages.json`, champ `provisoire`). Fulgur est la première carte **extra-rare** (5★).
+- Sources rangées dans `assets/sources/personnages/<dossier>/` : `fiche`, `saut`, `enjambement`, `transformation-dos`, `transformation-3-4`.
+- `src/tools/build.py` : champ `ety` (origine du nom) repris dans le jeu ; variable `LEXI_SKIP_MISSING=1` pour tester avec un dépôt allégé (ignore les personnages dont les sources manquent).
+- Nettoyage des lignes de sol des sprites d'Apis (transformation) et de Vetus (saut).
 ## v0.12 (progression des cartes)
 - **Départ avec deux cartes seulement** (Pyros, Électron) ; les autres arrivent au fil du jeu. Les anciennes sauvegardes de test sont remises à zéro (cartes et tutoriel) : plus de Colosse ni d'Umbra d'office.
 - **Collection** : seulement les cartes possédées, plus d'emplacements « ? », compteur « n cartes », **tri par rareté (étoiles) ou par domaine** (feu, électrique, énergie, eau, force, glace, amour, nature, ténèbre), pages automatiques. La rareté s'affiche dans la vue détaillée.

@@ -8,7 +8,7 @@ from PIL import Image
 from scipy import ndimage as ndi
 sys_path = None
 import sys; sys.path.insert(0, str(Path(__file__).resolve().parent))
-import cartes
+import cartes, recolor
 
 ROOT = Path(__file__).resolve().parents[2]; SRC = ROOT/'assets'/'sources'; K = 1.5   # K = netteté des sprites (1,5 × la taille d'écran)
 
@@ -69,15 +69,25 @@ def rs(im, s): return im.resize((max(1,round(im.width*s)), max(1,round(im.height
 def b64(im): b = io.BytesIO(); im.save(b,'WEBP',quality=90,method=4); return 'data:image/webp;base64,'+base64.b64encode(b.getvalue()).decode()
 def find(folder, stem): return next((SRC/folder).glob(stem+'.*'))
 
+_SPEC = {}
+def spec(e, persos):
+    """Réglages de recoloration d'une variante : [teinte de base, nouvelle teinte, saturation, luminosité x, luminosité +]."""
+    if e['id'] not in _SPEC:
+        base = next(p for p in persos if p['id'] == e['variante_de']); v = ordered_auto(next((SRC/'personnages'/base['dossier']).glob('fiche.*')), 8)
+        _SPEC[e['id']] = [recolor.base_hue([v[1], v[4]]), *recolor.COULEURS[e['teinte']]]
+    return _SPEC[e['id']]
+
 def card_for(e, persos):
     """Deux images de carte : complète (voiture devant + robot derrière) et « voiture seule » (avant la découverte du robot).
     Une carte faite à la main (carte.*) n'est utilisée que si l'entrée JSON contient "carte":"main"."""
-    typ = e.get('type','energie'); base = next(p for p in persos if p['id'] == e.get('sprites_de', e['id']))
+    typ = e.get('type','energie'); base = next(p for p in persos if p['id'] == e.get('variante_de', e.get('sprites_de', e['id'])))
     out = ROOT/'assets'/'generated'/'cartes'; out.mkdir(parents=True, exist_ok=True)
     hand = next((SRC/'personnages'/e['dossier']).glob('carte.*'), None) if e.get('carte') == 'main' else None
     fiche = next((SRC/'personnages'/base['dossier']).glob('fiche.*'), None)
     if fiche and not (e.get('sprites_de') and hand):
-        v = ordered_auto(fiche, 8); fond = SRC/'cartes'/'fonds'/(typ+'.png')
+        v = ordered_auto(fiche, 8)
+        if e.get('variante_de'): rc = spec(e, persos); v = [recolor.recolor(x, rc[1], rc[2], rc[3], rc[4], base=rc[0]) if i in (1,4) else x for i,x in enumerate(v)]   # variante : on recolore la voiture et le robot de la carte
+        fond = SRC/'cartes'/'fonds'/(typ+'.png')
         full = cartes.compose(fond, v[1], v[4], typ); car = cartes.compose(fond, v[1], v[4], typ, False); car.save(out/(e['id']+'-voiture.png'))
     else: full = car = None
     if hand: full = Image.open(hand).convert('RGB')
@@ -100,9 +110,13 @@ def main():
     persos = json.load(open(ROOT/'src'/'personnages.json', encoding='utf-8'))
     done = {}; RAR = {1:'commune',2:'commune',3:'rare',4:'epique',5:'extra'}
     for e in persos:
+        if os.environ.get('LEXI_SKIP_MISSING') and not (SRC/'personnages'/e.get('sprites_de',e['dossier'])).exists(): print('ignoré (sources absentes) :', e['id']); continue   # pour tester avec un dépôt allégé
         lab,dossier,idx,two,h = e['nom'],e['dossier'],e.get('indices'),e.get('deux_rangees',False),e['hauteur']
-        meta = {'id':e['id'],'label':lab,'famille':e.get('famille',e['id']),'couleur':e.get('couleur','#ffffff'),'etoiles':e.get('etoiles',2),'type':e.get('type','energie'),'rarete':'depart' if e.get('depart') else RAR[e.get('etoiles',2)],'part':e.get('particularite','')}
+        meta = {'id':e['id'],'label':lab,'ety':e.get('ety',''),'famille':e.get('famille',e['id']),'couleur':e.get('couleur','#ffffff'),'etoiles':e.get('etoiles',2),'type':e.get('type','energie'),'rarete':'depart' if e.get('depart') else RAR[e.get('etoiles',2)],'part':e.get('particularite','')}
         meta['card'], meta['cardCar'] = card_for(e, persos)
+        if e.get('variante_de'):   # variante de couleur : les sprites sont recolorés dans le jeu (rien d'embarqué en plus)
+            if e['variante_de'] not in done: print('ignoré (modèle absent) :', e['id']); A['chars'].pop() if False else None; continue
+            rc = spec(e, persos); meta['base'] = e['variante_de']; meta['rc'] = [round(x,4) for x in rc]; A['chars'].append(meta); continue
         if e.get('sprites_de'):   # même sprites qu'un autre personnage (en attendant les siens)
             A['chars'].append(dict(done[e['sprites_de']], **meta)); continue
         T = ordered_auto(find('personnages/'+dossier,'transformation-dos'), (max(idx)+1 if idx else 6), two); T = [T[i] for i in idx] if idx else T
