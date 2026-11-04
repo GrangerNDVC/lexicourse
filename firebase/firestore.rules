@@ -1,10 +1,21 @@
-// À AJOUTER aux règles Firestore existantes (dans le bloc "match /databases/{db}/documents")
+// À AJOUTER aux règles Firestore existantes (dans le bloc "match /databases/{db}/documents").
+// Remplace TON_EMAIL_PROF@exemple.fr par l'adresse e-mail du compte professeur (celui créé dans Authentication).
+
+function lexiProf() {
+  return request.auth != null
+    && request.auth.token.firebase.sign_in_provider == 'password'
+    && request.auth.token.email in ['TON_EMAIL_PROF@exemple.fr'];
+}
+
 match /lexicourse_joueurs/{uid} {
-  allow read: if request.auth != null && request.auth.uid == uid;
+  // l'élève lit son propre document ; le professeur lit tous les documents
+  allow read: if (request.auth != null && request.auth.uid == uid) || lexiProf();
   allow create, update: if request.auth != null && request.auth.uid == uid
-    && request.resource.data.keys().hasOnly(['pseudo','classe','cartes','ok','tot','maj'])
+    && request.resource.data.keys().hasOnly(['pseudo','classe','cartes','ok','tot','maj','tuto','robot','races','hist','q'])
     && request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 16
     && request.resource.data.classe is string && request.resource.data.classe.size() <= 12
-    && request.resource.data.cartes is list && request.resource.data.cartes.size() <= 64;
+    && request.resource.data.cartes is list && request.resource.data.cartes.size() <= 200
+    && (!('hist' in request.resource.data) || (request.resource.data.hist is list && request.resource.data.hist.size() <= 40))
+    && (!('q' in request.resource.data) || (request.resource.data.q is map && request.resource.data.q.size() <= 100));
   allow delete: if false;
 }

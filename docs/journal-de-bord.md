@@ -36,6 +36,8 @@
 - 03/11 — Sprites 13 à 27 (sauf 12, 19, 20) intégrés avec étoiles/types provisoires ; sprite 12 abandonné (à refaire). Dépôt allégé fourni pour tests (sans musique ni toutes les images).
 - 03/11 — Modèles recolorables choisis par Julie : sprites 20 (citadine bleue), 21 (scooter) et 22 (hatchback rétro).
 - 03/11 — Recoloration par code branchée au jeu (variantes d'un même modèle, sprites recolorés dans le navigateur). 10 variantes communes ajoutées (scooter et citadine bleue). À décider : quelles couleurs pour quelles rares, et les autres modèles recolorables.
+- 03/11 — Priorité : écran prof (connexion Firebase e-mail / mot de passe, outils de test, suivi des élèves), accessible par une petite icône discrète en bas à gauche.
+- 03/11 — Plan des courses (`docs/plan-des-courses.md`) : univers neige, port, volcan, lune, désert ; une spécificité de jeu et une pédagogie par course (marche du robot, glisse, ponts, sauts, virages).
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).

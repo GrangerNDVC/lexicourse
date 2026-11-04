@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v0.16 (écran prof)
+- **Écran prof** : un très petit mortier discret en bas à gauche de l'écran d'accueil (loin du badge Netlify en bas à droite) ouvre une connexion **e-mail / mot de passe Firebase**.
+- **Outils de test** : toutes les cartes, retour au départ, tutoriel / robot, réponses toujours justes, boost infini, course avec n'importe quel pilote, fins de course simulées (sans-faute, belle, ratée), tirage, adversaire-carte battu, surprise du robot, statistiques de tirage. Mode test : rien n'est envoyé aux comptes élèves ; la déconnexion restaure ta sauvegarde (restauration aussi au lancement suivant si le navigateur a été fermé avant).
+- **Suivi des élèves** : liste par classe (pseudo, cartes, % de réussite, courses, dernière activité) et fiche par élève (cartes, 8 dernières courses, questions les plus ratées).
+- Le jeu enregistre maintenant pour chaque élève : tutoriel, robot, nombre de courses, 30 dernières courses, réussites et erreurs par question (`firebase/firestore.rules` et `firebase/README.md` mis à jour : **les règles Firestore sont à republier**, avec ton e-mail).
+- En local (`localhost`, fichier ouvert directement), l'écran prof s'ouvre sans Firebase.
 ## v0.15 (trois modèles recolorables)
 - Les modèles recolorables sont maintenant **la citadine bleue (Aqua), le scooter (Formica) et la hatchback rétro (Vetus)**.
 - **5 variantes de Vetus** (communes, provisoires) : Rufa (rouge, feu), Lutea (jaune, électrique), Prasina (vert, nature), Cana (gris, force), Atra (noir, ténèbre). **36 cartes au total.**

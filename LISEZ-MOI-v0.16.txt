@@ -1,0 +1,9 @@
+Mise à jour Lexicourse v0.16 — écran prof
+
+index.html                -> racine du dépôt : jeu complet, 36 pilotes, écran prof
+src/template.html         -> remplace l'ancien
+firebase/firestore.rules  -> NOUVEAU CONTENU : à recopier dans les règles Firestore (console Firebase) en remplaçant TON_EMAIL_PROF@exemple.fr, puis PUBLIER
+firebase/README.md        -> les 5 étapes pour créer le compte professeur
+CHANGELOG.md, docs/*      -> remplacent les anciens (nouveau : docs/plan-des-courses.md)
+
+Sans la mise à jour des règles Firestore, les élèves continuent de jouer (la sauvegarde en ligne des nouvelles données sera refusée, la sauvegarde locale reste valable) et l'écran prof ne pourra pas lire leurs comptes.

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.15 — trois modèles recolorables</title>
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Lexicourse v0.16 — écran prof</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>html,body{margin:0;height:100%;background:#05071a;overflow:hidden}canvas{position:absolute;inset:0;margin:auto;touch-action:none}</style></head><body>
 <canvas id="c" width="960" height="540"></canvas>
@@ -29,7 +29,7 @@ let tr={t:0,dir:1},act={t:0,d:.8,k:'jump'},cool=0,boostT=0,slowT=0,shake=0,msg={
 const gates=[];
 let pz=0,colBack='hub';   // pz : course en pause ; colBack : écran où revient la Collection
 function newQ(gt){const q=Q[qi++%Q.length],o=[0,1,2,3];for(let i=3;i>0;i--){const j=Math.random()*(i+1)|0;[o[i],o[j]]=[o[j],o[i]]}
-  Object.assign(gt,{q:q[0],w:o.map(i=>q[1][i]),c:o.indexOf(q[2]),e:q[3],t:pickT(),done:0,L:undefined})}
+  Object.assign(gt,{q:q[0],k:qkey(q[0]),w:o.map(i=>q[1][i]),c:o.indexOf(q[2]),e:q[3],t:pickT(),done:0,L:undefined})}
 const pickT=()=>{const a=robotOn?['barrier','blocks','ramp','pool']:['barrier','ramp'];return a[Math.random()*a.length|0]};
 const newS=gt=>Object.assign(gt,{sp:1,c:Math.random()*4|0,t:pickT(),done:0});
 const say=(t,o)=>msg={t,life:4.5,ok:o};
@@ -45,8 +45,10 @@ const PR={base:[70,27,3],      // chances de base (%) : commune, rare, extra-rar
   goodAcc:.85};                // seuil de « belle course »
 const RV={depart:-1,commune:0,rare:1,epique:1,extra:2},RN=['Commune','Rare','Extra-rare'],RC=['#8fb8ff','#d78bff','#ff6bd6'],rar=i=>RV[CH[i].rarete],tierOf=i=>RV[CH[i].rarete];   // la rareté de chaque carte est choisie dans src/personnages.json ("epique" compte comme rare)
 let prof={owned:[],ok:0,tot:0,pseudo:'',classe:''},cloud=null;
+let cheat={ok:0,gauge:0},tp=null,pf={tab:'outils',list:[],sel:-1,msg:'',snap:null,cls:'',off:0,busy:0,k:0};   // écran prof : triche, session, état
+const qkey=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return(h>>>0).toString(36)};   // identifiant court d'une question
 try{Object.assign(prof,JSON.parse(localStorage.getItem(SK)||'{}'))}catch(e){}
-function save(){prof.passed=passed;if(CH.length)prof.cartes=CH.filter((c,i)=>prof.owned[i]).map(c=>c.id);try{localStorage.setItem(SK,JSON.stringify(prof,(k,v)=>k=='owned'?undefined:v))}catch(e){}if(cloud)cloud.push()}
+function save(){prof.passed=passed;if(CH.length)prof.cartes=CH.filter((c,i)=>prof.owned[i]).map(c=>c.id);try{localStorage.setItem(SK,JSON.stringify(prof,(k,v)=>k=='owned'?undefined:v))}catch(e){}if(cloud&&!tp)cloud.push()}
 const own=()=>prof.owned.reduce((a,b)=>a+b,0);
 function tierWeights(luck){const dR=prof.dryR|0,dE=prof.dryE|0,x=Math.min(PR.caps[2],PR.base[2]+PR.luckExtra*luck+PR.pityExtra*dE),r=Math.min(PR.caps[1],PR.base[1]+PR.luckRare*luck+PR.pityRare*dR);return[Math.max(0,100-x-r),r,x]}
 function pickCard(luck,force,not){const by=[0,1,2].map(t=>CH.map((c,i)=>i).filter(i=>!prof.owned[i]&&tierOf(i)==t&&CH[i].id!=not));
@@ -76,7 +78,7 @@ async function initCloud(){const cfg=A.firebase;if(!cfg)return;
   try{const B='https://www.gstatic.com/firebasejs/10.12.2/',[{initializeApp},{getAuth,signInAnonymously},{getFirestore,doc,getDoc,setDoc,serverTimestamp}]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
     const app=initializeApp(cfg),au=getAuth(app),ref=doc(getFirestore(app),'lexicourse_joueurs',(await signInAnonymously(au)).user.uid),snap=await getDoc(ref);
     if(snap.exists()){const d=snap.data(),c=d.cartes||[];prof.owned=CH.map((x,i)=>prof.owned[i]||c.includes(x.id)?1:0);prof.ok=Math.max(prof.ok,d.ok||0);prof.tot=Math.max(prof.tot,d.tot||0);prof.pseudo=prof.pseudo||d.pseudo||'';prof.classe=prof.classe||d.classe||''}
-    cloud={push:()=>setDoc(ref,{pseudo:prof.pseudo,classe:prof.classe,cartes:CH.filter((x,i)=>prof.owned[i]).map(x=>x.id),ok:prof.ok,tot:prof.tot,maj:serverTimestamp()},{merge:true}).catch(()=>{})};cloud.push()}
+    cloud={push:()=>setDoc(ref,{pseudo:prof.pseudo,classe:prof.classe,cartes:CH.filter((x,i)=>prof.owned[i]).map(x=>x.id),ok:prof.ok,tot:prof.tot,tuto:!!prof.tuto,robot:!!prof.robot,races:prof.races|0,hist:(prof.hist||[]).slice(-30),q:Object.fromEntries(Object.entries(prof.q||{}).slice(0,80)),maj:serverTimestamp()},{merge:true}).catch(()=>{})};cloud.push()}
   catch(e){console.warn('Firebase indisponible : sauvegarde locale uniquement',e)}}
 function askIdentity(){if(!A.firebase||prof.pseudo)return;paused=1;const d=document.createElement('div');
   d.style.cssText='position:fixed;inset:0;background:rgba(3,6,25,.94);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#fff;z-index:9';
@@ -98,7 +100,7 @@ async function init(){
   for(const o of A.obst){o.img=await load(o.u);OB[o.n]=o}
   for(const c of A.chars){if(!c.base)for(const k of['tr','jump','step'])c[k]=await Promise.all(c[k].map(load));if(c.card)c.cardImg=await load(c.card);if(c.cardCar)c.cardCarImg=await load(c.cardCar)}for(const c of A.chars)if(c.base){const b=A.chars.find(x=>x.id==c.base);for(const k of['tr','jump','step'])lazy(c,k,()=>b[k].map(im=>tint(im,c.rc)))}   // variantes : sprites recolorés à la demande
   CH=A.chars;HOME=await load(A.home);const OLD=['rouge','jaune','camion','moto','citadine','f1','monster-truck','camping-car'];if(!prof.cartes)prof.cartes=OLD.filter((id,i)=>(prof.owned||[])[i]);   // reprise des anciennes sauvegardes
-  if(prof.ver!==2){prof.cartes=[];prof.tuto=0;prof.dry=0;prof.dryR=0;prof.dryE=0;prof.ver=2}prof.cartes=prof.cartes||[];prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
+  autoRestore();if(prof.ver!==2){prof.cartes=[];prof.tuto=0;prof.dry=0;prof.dryR=0;prof.dryE=0;prof.ver=2}prof.cartes=prof.cartes||[];prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);CH.forEach((c,i)=>{const k=c.famille||c.id;let f=FAM.find(x=>x.k==k);if(!f)FAM.push(f={k,v:[]});f.v.push(i)});passed=prof.passed|0;robotOn=prof.robot|0;
   const by=n=>A.roadside.filter(o=>o.n.startsWith(n)),pool=['pylon','lamp','billboard','house','tree','tree','light'];
   for(let i=8;i<N;i+=8)for(const side of[-1,1]){const l=by(pool[rnd()*pool.length|0]);segs[i].spr.push({o:l[rnd()*l.length|0],off:side*(1.35+rnd()*1.3)})}
   for(let i=0;i<N;i+=5){const s=segs[i];
@@ -115,7 +117,7 @@ function toggle(){if(!robotOn){say('Le robot se débloque en progressant : répo
 function startAct(){if(act.t<=0&&tr.t<=0)act={t:.8,d:.8,k:form?'step':'jump'}}
 function pick(i){if(mode!='menu')return;if(!prof.owned[i]){say('Carte à gagner au hasard après une course réussie !',0);return}car=i}
 const chk=()=>{if(!robotOn&&passed>=UNLOCK){robotOn=1;prof.robot=1;save();surprise={t:0};say('Robot débloqué ! Il ralentit pour mieux lire et enjambe les gros obstacles (Espace)',1)}};   // provisoire : plus tard, le robot se découvre en battant l'autre voiture du tutoriel
-addEventListener('keydown',e=>{const k=e.key;if(e.target.tagName=='INPUT')return;if(e.repeat)return;if(surprise){if(surprise.t>2.4)surprise=null;return}if(reveal){if(reveal.t>1.2)closeReveal();return}if(mode=='home'){if(/^[0-9]$/.test(k)&&code.length<4)code+=k;else if(k=='Backspace')code=code.slice(0,-1);else if(k=='Enter'){if(code.length==4)say('La connexion par code arrive bientôt : joue en invité pour le moment !',1);else mode='hub'}return}if(mode=='menu'){if(k=='Escape')mode='tuto';if(k=='Enter'||k==' ')startRace();if(k=='ArrowRight')pageM=Math.min(pageM+1,Math.ceil(FAM.length/8)-1);if(k=='ArrowLeft')pageM=Math.max(0,pageM-1);if('12345678'.includes(k)){const f=FAM[pageM*8+ +k-1];if(f)pickFam(f)}if(k=='k')draw(0);if(k=='p')draw(1);return}if(mode=='collection'){if(detail>=0)detail=-1;else if(k=='ArrowRight')colPage++;else if(k=='ArrowLeft')colPage=Math.max(0,colPage-1);else if(k=='Escape'||k=='Enter')mode=colBack;return}if(mode=='result'){if(k=='Enter'||k==' ')nextReward();return}if(mode=='hub'){if(k=='Escape')mode='home';else if(k=='Enter'||k=='1')mode='tuto';else if(k=='3'||k=='c')openCol('hub');else if(k=='2')say('Les courses se débloqueront bientôt : commence par le tutoriel !',0);return}if(mode=='tuto'){if(k=='Escape')mode='hub';else if(k=='Enter'||k=='1')mode='menu';else if(k=='2')tutoCourse();return}if(mode=='race'&&(k=='Escape'||pz)){if(k=='Escape'||k=='Enter'){pz^=1;boosting=0}else if(k=='h'&&pz)goHome();return}if([' ','ArrowUp','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();if(e.repeat)return;
+addEventListener('keydown',e=>{const k=e.key;if(e.target.tagName=='INPUT')return;if(e.repeat)return;if(surprise){if(surprise.t>2.4)surprise=null;return}if(reveal){if(reveal.t>1.2)closeReveal();return}if(mode=='home'){if(/^[0-9]$/.test(k)&&code.length<4)code+=k;else if(k=='Backspace')code=code.slice(0,-1);else if(k=='Enter'){if(code.length==4)say('La connexion par code arrive bientôt : joue en invité pour le moment !',1);else mode='hub'}return}if(mode=='menu'){if(k=='Escape')mode='tuto';if(k=='Enter'||k==' ')startRace();if(k=='ArrowRight')pageM=Math.min(pageM+1,Math.ceil(FAM.length/8)-1);if(k=='ArrowLeft')pageM=Math.max(0,pageM-1);if('12345678'.includes(k)){const f=FAM[pageM*8+ +k-1];if(f)pickFam(f)}if(k=='k')draw(0);if(k=='p')draw(1);return}if(mode=='collection'){if(detail>=0)detail=-1;else if(k=='ArrowRight')colPage++;else if(k=='ArrowLeft')colPage=Math.max(0,colPage-1);else if(k=='Escape'||k=='Enter')mode=colBack;return}if(mode=='prof'){if(k=='Escape')mode='home';return}if(mode=='result'){if(k=='Enter'||k==' ')nextReward();return}if(mode=='hub'){if(k=='Escape')mode='home';else if(k=='Enter'||k=='1')mode='tuto';else if(k=='3'||k=='c')openCol('hub');else if(k=='2')say('Les courses se débloqueront bientôt : commence par le tutoriel !',0);return}if(mode=='tuto'){if(k=='Escape')mode='hub';else if(k=='Enter'||k=='1')mode='menu';else if(k=='2')tutoCourse();return}if(mode=='race'&&(k=='Escape'||pz)){if(k=='Escape'||k=='Enter'){pz^=1;boosting=0}else if(k=='h'&&pz)goHome();return}if([' ','ArrowUp','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();if(e.repeat)return;
   if(k=='ArrowLeft'||k=='q'||k=='a')setLn(ln-1);if(k=='ArrowRight'||k=='d')setLn(ln+1);
   if(k==' ')toggle();if(k=='ArrowUp')startAct();if(k=='b'||k=='Shift')boosting=1;if(k=='n'){passed+=3;chk()}});
 addEventListener('keyup',e=>{if(e.key=='b'||e.key=='Shift')boosting=0});addEventListener('pointerup',()=>boosting=0);
@@ -131,9 +133,9 @@ function startRace(){pz=0;pos=0;x=LX[1];ln=1;v=0;lapT=0;spOn=0;spT=0;form=0;tr.t
 function endRace(){const acc=lapTot?lapOk/lapTot:0,perfect=lapTot>=3&&acc==1,done=lapTot>=3,luck=(perfect?2:acc>=PR.goodAcc?1:0)+(rivalWon?2:0);pending=[];let first=0;
   if(done&&!prof.tuto){prof.tuto=1;first=1;prof.dry=0;pending.push({force:0,luck})}   // fin du tutoriel 1 : une carte commune garantie
   else if(done&&acc>=WIN_PCT){prof.dry=(prof.dry|0)+1;if(prof.dry>=PITY||Math.random()<Math.min(1,PR.chance+PR.chanceLuck*luck)){pending.push({luck});prof.dry=0}}
-  prof.races=(prof.races|0)+1;
+  prof.races=(prof.races|0)+1;if(done)(prof.hist=prof.hist||[]).push({t:Date.now(),a:Math.round(acc*100),ok:lapOk,n:lapTot,c:pending.length,f:first});if(prof.hist&&prof.hist.length>30)prof.hist.shift();
   res={ok:lapOk,tot:lapTot,acc,sp:spT,t:lapT,cards:pending.length,perfect,first,luck};mode='result';pos=Math.min(pos,LEN-1);spOn=0;boosting=0;save()}
-function nextReward(){while(pending.length){if(draw(pending.shift()))return}mode='tuto';v=0}
+function nextReward(){while(pending.length){if(draw(pending.shift()))return}mode=tp?'prof':'tuto';v=0}
 function goHome(){pz=0;boosting=0;v=0;detail=-1;mode='home'}
 function openCol(b){colBack=b;mode='collection';colPage=0;detail=-1}
 function tutoCourse(){if(!prof.tuto)say('Termine d’abord l’entraînement seul !',0);else say('La course contre un adversaire arrive au prochain chantier.',1)}
@@ -229,16 +231,90 @@ function pauseScreen(){g.fillStyle='rgba(3,6,25,.82)';g.fillRect(0,0,W,H);btns=[
   g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText('Si tu retournes à l’accueil, la course en cours est abandonnée (tes cartes sont conservées).',W/2,364);
   g.fillText('Échap ou Entrée = reprendre · H = accueil',W/2,392);g.textAlign='left'}
 
+// ===== ÉCRAN PROF : connexion Firebase (e-mail / mot de passe), outils de test, suivi des élèves =====
+const isLocal=()=>['localhost','127.0.0.1',''].includes(location.hostname);
+async function fbProf(){if(window.__fbProf)return window.__fbProf();const B='https://www.gstatic.com/firebasejs/10.12.2/',[{initializeApp,getApps},{getAuth,signInWithEmailAndPassword,signOut},{getFirestore,collection,getDocs}]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+  const app=getApps().find(a=>a.name=='prof')||initializeApp(A.firebase,'prof');return{auth:getAuth(app),db:getFirestore(app),signIn:signInWithEmailAndPassword,signOut,collection,getDocs}}   // application « prof » séparée : la session des élèves n'est pas touchée
+const snapProf=()=>JSON.stringify(Object.assign({},prof,{owned:undefined,cartes:CH.filter((c,i)=>prof.owned[i]).map(c=>c.id),passed}));
+function restoreProf(){if(!pf.snap)return;const s=JSON.parse(pf.snap);for(const k of Object.keys(prof))delete prof[k];Object.assign(prof,s);prof.owned=CH.map(c=>c.rarete=='depart'||prof.cartes.includes(c.id)?1:0);passed=prof.passed|0;robotOn=prof.robot?1:0;pf.snap=null;try{localStorage.removeItem(SK+'_snap')}catch(e){}save()}
+function autoRestore(){try{const sn=localStorage.getItem(SK+'_snap');if(sn){for(const k of Object.keys(prof))delete prof[k];Object.assign(prof,JSON.parse(sn));localStorage.removeItem(SK+'_snap');localStorage.setItem(SK,JSON.stringify(prof,(k,v)=>k=='owned'?undefined:v))}}catch(e){}}   // session prof interrompue : on retrouve la vraie sauvegarde
+function openProf(){if(tp){mode='prof';return}
+  if(!A.firebase){if(isLocal()){tp={local:1,email:'mode local (hors ligne)'};startProf();return}say('Écran prof indisponible : Firebase n’est pas configuré.',0);return}
+  askProf()}
+function startProf(){if(!pf.snap){pf.snap=snapProf();try{localStorage.setItem(SK+'_snap',pf.snap)}catch(e){}}pf.tab='outils';pf.sel=-1;pf.msg='';mode='prof'}
+function profLogout(){restoreProf();cheat.ok=0;cheat.gauge=0;const f=tp&&tp.f;tp=null;mode='home';if(f)f.signOut(f.auth).catch(()=>{})}
+async function profLogin(email,pwd){try{const f=await fbProf(),cr=await f.signIn(f.auth,email,pwd);tp={email:cr.user.email,f};startProf();return true}catch(e){return false}}
+function askProf(){paused=1;const d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:rgba(3,6,25,.94);display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#fff;z-index:9';
+  d.innerHTML='<div style="background:#0b1038;border:3px solid #22e6ff;border-radius:18px;padding:28px;width:min(92vw,400px)"><h2 style="margin:0 0 14px">Espace professeur</h2><input id="pe" type="email" autocomplete="username" placeholder="E-mail" style="width:100%;box-sizing:border-box;padding:10px;font-size:17px;border-radius:8px;border:0;margin-bottom:10px"><input id="pm" type="password" autocomplete="current-password" placeholder="Mot de passe" style="width:100%;box-sizing:border-box;padding:10px;font-size:17px;border-radius:8px;border:0;margin-bottom:8px"><div id="px" style="color:#ff8a9a;min-height:20px;font-size:14px;margin-bottom:8px"></div><button id="pg" style="width:100%;padding:12px;font-size:18px;font-weight:bold;border:0;border-radius:10px;background:#22e6ff;cursor:pointer;margin-bottom:8px">Connexion</button><button id="pc" style="width:100%;padding:8px;font-size:15px;border:0;border-radius:10px;background:#1b2350;color:#9fe8ff;cursor:pointer">Annuler</button></div>';
+  document.body.appendChild(d);const go=async()=>{const x=d.querySelector('#px');x.style.color='#9fe8ff';x.textContent='Connexion…';const ok=await profLogin(d.querySelector('#pe').value.trim(),d.querySelector('#pm').value);if(ok){d.remove();paused=0}else{x.style.color='#ff8a9a';x.textContent='Connexion refusée : e-mail ou mot de passe incorrect.'}};
+  d.querySelector('#pg').onclick=go;d.querySelector('#pm').onkeydown=e=>{if(e.key=='Enter')go()};d.querySelector('#pc').onclick=()=>{d.remove();paused=0};d.querySelector('#pe').focus()}
+function profIcon(){const x=10,y=H-34;btns.push({x:x-5,y:y-8,w:40,h:40,f:openProf});g.save();g.globalAlpha=tp?.7:.28;g.fillStyle='#9fe8ff';g.strokeStyle='#9fe8ff';g.lineWidth=1.5;g.beginPath();g.moveTo(x+13,y);g.lineTo(x+26,y+7);g.lineTo(x+13,y+14);g.lineTo(x,y+7);g.closePath();g.fill();g.beginPath();g.moveTo(x+6,y+11);g.lineTo(x+6,y+17);g.quadraticCurveTo(x+13,y+23,x+20,y+17);g.lineTo(x+20,y+11);g.stroke();g.restore()}   // petit mortier discret, en bas à gauche (le badge Netlify est en bas à droite)
+function pbtn(x,y,w,h,t,s,f,on){btns.push({x,y,w,h,f});g.fillStyle=on?'rgba(34,230,255,.22)':'rgba(8,16,58,.92)';g.strokeStyle=on?'#22e6ff':'#2a3f6b';g.lineWidth=on?3:2;g.beginPath();g.roundRect(x,y,w,h,12);g.fill();g.stroke();g.textAlign='center';g.fillStyle='#fff';g.font='bold 15px system-ui';g.fillText(t,x+w/2,y+(s?h/2-3:h/2+5));if(s){g.fillStyle=on?'#7dffb0':'#9fe8ff';g.font='13px system-ui';g.fillText(s,x+w/2,y+h/2+15)}g.textAlign='left'}
+const simEnd=(o,n)=>{lapOk=o;lapTot=n;rivalWon=0;mode='race';endRace()};
+const PT=[
+ {t:'Débloquer toutes les cartes',f:()=>{prof.owned=CH.map(()=>1);save();pf.msg=CH.length+' cartes débloquées.'}},
+ {t:'Revenir aux 2 cartes de départ',f:()=>{prof.owned=CH.map(c=>c.rarete=='depart'?1:0);save();pf.msg='Collection remise au départ.'}},
+ {t:'Tutoriel 1 terminé',on:()=>!!prof.tuto,f:()=>{prof.tuto=prof.tuto?0:1;save()}},
+ {t:'Robot découvert',on:()=>!!prof.robot,f:()=>{prof.robot=prof.robot?0:1;robotOn=prof.robot;save()}},
+ {t:'Réponses toujours justes',on:()=>!!cheat.ok,f:()=>{cheat.ok=cheat.ok?0:1}},
+ {t:'Boost infini',on:()=>!!cheat.gauge,f:()=>{cheat.gauge=cheat.gauge?0:1}},
+ {t:'Course test : choisir un pilote',f:()=>{mode='menu'}},
+ {t:'Fin de course : sans-faute',f:()=>simEnd(5,5)},
+ {t:'Fin de course : belle (80 %)',f:()=>simEnd(4,5)},
+ {t:'Fin de course : ratée (20 %)',f:()=>simEnd(1,5)},
+ {t:'Tirage de carte normal',f:()=>{if(draw({luck:0}))pf.msg='Tirage effectué.'}},
+ {t:'Adversaire-carte battu (test)',f:()=>{const k=pickRival(0);if(k>=0)winRival(k);else pf.msg='Collection complète.'}},
+ {t:'Statistiques de tirage (×200)',f:()=>{const sv=prof.owned.slice(),dr=prof.dryR,de=prof.dryE,c=[0,0,0],N=200;for(let n=0;n<N;n++){prof.owned=CH.map(x=>x.rarete=='depart'?1:0);prof.dryR=0;prof.dryE=0;const k=pickCard(0);if(k>=0)c[tierOf(k)]++}prof.owned=sv;prof.dryR=dr;prof.dryE=de;pf.msg='Tirage ×200, chance 0 : '+c.map((x,i)=>RN[i]+' '+Math.round(100*x/N)+' %').join(' · ')}},
+ {t:'Surprise du robot',f:()=>{surprise={t:0}}},
+ {t:'Restaurer ma sauvegarde',f:()=>{const s=pf.snap;restoreProf();pf.snap=s;pf.msg='Sauvegarde d’avant les tests restaurée.'}}];
+const fd=t=>{try{const d=t&&t.toDate?t.toDate():new Date(t);return d.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}};
+const pcent=r=>r.tot?Math.round(100*r.ok/r.tot):0;
+async function loadEleves(){pf.busy=1;pf.msg='';pf.sel=-1;pf.off=0;
+  try{if(tp.local){pf.list=[];pf.msg='Mode local : les comptes élèves ne sont lisibles qu’une fois connecté avec Firebase.'}
+    else{const f=tp.f,sn=await f.getDocs(f.collection(f.db,'lexicourse_joueurs'));pf.list=sn.docs.map(d=>Object.assign({id:d.id},d.data()));pf.list.sort((a,b)=>(a.classe||'').localeCompare(b.classe||'')||(a.pseudo||'').localeCompare(b.pseudo||''))}}
+  catch(e){pf.list=[];pf.msg='Lecture impossible : vérifie les règles Firestore (accès prof). '+(e.code||e.message||'')}
+  pf.busy=0}
+function elevesView(){const cls=[...new Set(pf.list.map(r=>r.classe||''))].sort(),L=pf.list.filter(r=>!pf.cls||(r.classe||'')==pf.cls);
+  g.font='15px system-ui';g.fillStyle='#9fe8ff';
+  if(pf.sel>=0&&L[pf.sel]){const r=L[pf.sel];pbtn(20,56,120,30,'← Liste','',()=>{pf.sel=-1});
+    g.fillStyle='#fff';g.font='bold 24px system-ui';g.fillText((r.pseudo||'(sans pseudo)')+'  ·  classe '+(r.classe||'—'),160,80);
+    g.font='15px system-ui';g.fillStyle='#9fe8ff';g.fillText('Réussite '+pcent(r)+' % ('+(r.ok|0)+' bonnes réponses sur '+(r.tot|0)+') · '+(r.races|0)+' course(s) · tutoriel '+(r.tuto?'terminé ✔':'non terminé')+' · robot '+(r.robot?'découvert ✔':'non découvert')+' · dernière activité '+fd(r.maj),20,112);
+    g.fillStyle='#ffc23d';g.font='bold 16px system-ui';g.fillText('Cartes ('+(r.cartes||[]).length+'/'+CH.length+')',20,142);g.fillStyle='#fff';g.font='14px system-ui';
+    wrap((r.cartes||[]).map(id=>{const c=CH.find(x=>x.id==id);return c?c.label:id}).join(' · ')||'aucune',430).slice(0,5).forEach((l,i)=>g.fillText(l,20,164+i*20));
+    g.fillStyle='#ffc23d';g.font='bold 16px system-ui';g.fillText('Dernières courses',500,142);g.font='14px system-ui';
+    const H2=(r.hist||[]).slice(-8).reverse();if(!H2.length){g.fillStyle='#9fe8ff';g.fillText('Aucune course enregistrée.',500,164)}
+    H2.forEach((h,i)=>{g.fillStyle=h.a>=70?'#7dffb0':'#ff8a9a';g.fillText(fd(h.t)+'   '+h.a+' %   ('+h.ok+'/'+h.n+')'+(h.c?'   +carte':''),500,164+i*20)});
+    g.fillStyle='#ffc23d';g.font='bold 16px system-ui';g.fillText('Questions les plus ratées',20,290);g.font='14px system-ui';
+    const km={};Q.forEach(q=>km[qkey(q[0])]=q[0]);const E=Object.entries(r.q||{}).filter(([k,v])=>v.k>0).sort((a,b)=>b[1].k-a[1].k).slice(0,7);
+    if(!E.length){g.fillStyle='#9fe8ff';g.fillText('Aucune erreur enregistrée.',20,314)}
+    E.forEach(([k,v],i)=>{g.fillStyle='#ff8a9a';g.fillText('✖ '+v.k+'  ✔ '+v.o,20,314+i*24);g.fillStyle='#fff';g.fillText((km[k]||'(question retirée de la banque)').slice(0,92),110,314+i*24)});return}
+  pbtn(20,56,150,30,'Actualiser','',loadEleves);pbtn(180,56,200,30,'Classe : '+(pf.cls||'toutes'),'',()=>{const i=cls.indexOf(pf.cls);pf.cls=i+1<cls.length?cls[i+1]:'';pf.sel=-1;pf.off=0});
+  const moy=L.length?Math.round(L.reduce((a,r)=>a+pcent(r),0)/L.length):0;g.fillStyle='#9fe8ff';g.font='15px system-ui';g.fillText(L.length+' élève(s) · réussite moyenne '+moy+' %',400,76);
+  if(pf.busy){g.fillStyle='#fff';g.fillText('Chargement…',20,130);return}
+  if(!L.length){g.fillStyle='#fff';g.fillText(pf.msg||'Aucun élève pour l’instant (ou appuie sur Actualiser).',20,130);return}
+  g.fillStyle='#ffc23d';g.font='bold 14px system-ui';[['Pseudo',30],['Classe',250],['Cartes',340],['Réussite',430],['Courses',570],['Dernière activité',660]].forEach(([t,x])=>g.fillText(t,x,112));
+  L.slice(pf.off,pf.off+9).forEach((r,n)=>{const y=122+n*38,i=pf.off+n;btns.push({x:20,y,w:860,h:34,f:()=>{pf.sel=i}});g.fillStyle='rgba(8,16,58,.92)';g.beginPath();g.roundRect(20,y,860,34,8);g.fill();g.fillStyle='#fff';g.font='15px system-ui';
+    g.fillText((r.pseudo||'—').slice(0,18),30,y+22);g.fillText(r.classe||'—',250,y+22);g.fillText((r.cartes||[]).length+'/'+CH.length,340,y+22);
+    g.fillStyle='#1b2350';g.fillRect(430,y+10,90,14);g.fillStyle=pcent(r)>=70?'#7dffb0':'#ff8a9a';g.fillRect(430,y+10,.9*pcent(r),14);g.fillStyle='#fff';g.fillText(pcent(r)+' %',528,y+22);g.fillText(String(r.races|0),570,y+22);g.fillText(fd(r.maj),660,y+22)});
+  if(pf.off>0)pbtn(895,122,50,34,'▲','',()=>{pf.off=Math.max(0,pf.off-9)});if(pf.off+9<L.length)pbtn(895,162,50,34,'▼','',()=>{pf.off+=9})}
+function profScreen(){g.fillStyle='#050a26';g.fillRect(0,0,W,H);btns=[];homeBtn();
+  pbtn(W/2-170,10,160,34,'Outils de test','',()=>{pf.tab='outils';pf.sel=-1;pf.msg=''},pf.tab=='outils');pbtn(W/2+10,10,160,34,'Élèves','',()=>{pf.tab='eleves';loadEleves()},pf.tab=='eleves');pbtn(W-170,10,156,34,'Se déconnecter','',profLogout);
+  if(pf.tab=='eleves'){elevesView();return}
+  PT.forEach((p,i)=>{const x=31+(i%3)*304,y=62+(i/3|0)*66;pbtn(x,y,290,58,p.t,p.on?(p.on()?'activé':'désactivé'):'',p.f,p.on&&p.on())});
+  const k=pf.k|0,c=CH[k],own=prof.owned[k];pbtn(31,398,54,44,'◀','',()=>{pf.k=(k+CH.length-1)%CH.length});pbtn(91,398,560,44,'Carte : '+c.label+'  ('+(k+1)+'/'+CH.length+')',own?'possédée ✔  ·  clic = retirer':'non possédée ✘  ·  clic = donner',()=>{prof.owned[k]=own?0:1;save()},!!own);pbtn(657,398,54,44,'▶','',()=>{pf.k=(k+1)%CH.length});
+  g.textAlign='left';g.fillStyle='#7dffb0';g.font='bold 15px system-ui';wrap(pf.msg||'',880).forEach((l,i)=>g.fillText(l,31,468+i*20));
+  g.fillStyle='#6c7494';g.font='12px system-ui';g.fillText('Connecté : '+(tp?tp.email:'')+'  ·  mode test : rien n’est envoyé aux comptes élèves ; « Se déconnecter » restaure ta sauvegarde.',31,H-10)}
+
 // ===== MISE À JOUR (60 calculs par seconde) =====
-function hit(gt){gt.done=1;const L=gt.L!==undefined?gt.L:clampL(Math.round((x+.75)/.5)),ideal=(gt.t=='barrier'||gt.t=='ramp')?0:1;
+function hit(gt){gt.done=1;let L=gt.L!==undefined?gt.L:clampL(Math.round((x+.75)/.5)),ideal=(gt.t=='barrier'||gt.t=='ramp')?0:1;if(cheat.ok)L=gt.c;
   if(gt.sp){if(L==gt.c)return;if(boosting&&gauge>0&&form==ideal){startAct();score+=5;return}v*=.5;shake=.35;say('Obstacle ! Prends la voie libre, ou boost + bonne forme',0);return}
-  tot++;prof.tot++;passed++;lapTot++;
-  if(L==gt.c){ok++;prof.ok++;lapOk++;score+=10;
+  tot++;prof.tot++;passed++;lapTot++;const rec=gt.k&&!tp?((prof.q=prof.q||{})[gt.k]=prof.q[gt.k]||{o:0,k:0}):null;
+  if(L==gt.c){ok++;prof.ok++;lapOk++;score+=10;rec&&rec.o++;
     if(form==ideal){gauge=Math.min(100,gauge+50);startAct();say('Bonne réponse ! '+(form?'Enjambement':'Saut')+' réussi : jauge de boost +50',1)}
     else{gauge=Math.min(100,gauge+25);slowT=1.5;say('Bonne réponse (+25), mais pas la bonne forme : tu passes en forçant',1)}}
-  else{v*=.45;shake=.4;say('Raté ! '+gt.e,0)}
+  else{rec&&rec.k++;v*=.45;shake=.4;say('Raté ! '+gt.e,0)}
   chk();save()}
-function update(dt){if(paused||pz)return;msg.life=Math.max(0,msg.life-dt);if(surprise){surprise.t+=dt;return}if(reveal){reveal.t+=dt;return}if(mode!='race')return;
+function update(dt){if(paused||pz)return;msg.life=Math.max(0,msg.life-dt);if(surprise){surprise.t+=dt;return}if(reveal){reveal.t+=dt;return}if(mode!='race')return;if(cheat.gauge)gauge=100;
   const s=segs[pos/SEG|0],road=MAXV*Math.min(1,.3+.07*passed),vmax=road*(form?ROBOT:1)*(boosting&&gauge>0?BOOST:1)*(slowT>0?.6:1);if(boosting&&gauge>0)gauge=Math.max(0,gauge-DRAIN*dt);
   x+=(LX[ln]-x)*Math.min(1,dt*9);
   v+=Math.sign(vmax-v)*Math.min(Math.abs(vmax-v),ACC*dt*(v>vmax?2:1));
@@ -316,7 +392,7 @@ function render(){
       if(cl<h&&s.a.cz>DEPTH){const sh=o.img.height*(1-cl/h);g.globalAlpha=1-s.fog;
         if(q.flip){g.save();g.translate(sx+w,sy);g.scale(-1,1);g.drawImage(o.img,0,0,o.img.width,sh,0,0,w,h-cl);g.restore()}else g.drawImage(o.img,0,0,o.img.width,sh,sx,sy,w,h-cl);g.globalAlpha=1}}
     if(s.gate&&s.a.cz>DEPTH)gate(s)}
-  player();g.restore();if(mode=='race'){hud();if(pz)pauseScreen()}else if(mode=='home')home();else if(mode=='hub')hub();else if(mode=='tuto')tuto();else if(mode=='menu')menu();else if(mode=='collection')collection();else resultScreen();if(reveal)card();if(surprise)surpriseScreen()}
+  player();g.restore();if(mode=='race'){hud();if(pz)pauseScreen()}else if(mode=='home'){home();profIcon()}else if(mode=='prof')profScreen();else if(mode=='hub')hub();else if(mode=='tuto')tuto();else if(mode=='menu')menu();else if(mode=='collection')collection();else resultScreen();if(reveal)card();if(surprise)surpriseScreen()}
 
 let last=performance.now(),acc=0;
 function loop(t){const f=Math.min(.25,(t-last)/1000);last=t;acc+=f;fps+=(1/Math.max(f,.001)-fps)*.05;requestAnimationFrame(loop);try{while(acc>=1/60){update(1/60);acc-=1/60}render()}catch(e){console.error('Lexicourse :',e);acc=0;if(g.reset)g.reset();else{g.setTransform(1,0,0,1,0,0);g.globalAlpha=1}}}   // la boucle ne s'arrête plus jamais, même en cas d'erreur
