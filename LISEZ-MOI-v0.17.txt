@@ -1,0 +1,11 @@
+Mise à jour Lexicourse v0.17 — Firebase et comptes par code
+
+index.html                       -> racine du dépôt : jeu complet (36 pilotes), configuration Firebase déjà intégrée
+src/template.html                -> remplace l'ancien
+firebase/database.rules.json     -> À COLLER dans Firebase > Realtime Database > Règles, puis PUBLIER (tes règles actuelles + le nœud jeux/lexicourse)
+firebase/firebase.config.json    -> configuration web de ton application « lexica » (lue par build.py)
+firebase/README.md               -> les étapes, dont le DOMAINE à autoriser
+firebase/firestore.rules         -> à SUPPRIMER du dépôt (Firestore n'est plus utilisé)
+CHANGELOG.md, docs/*             -> remplacent les anciens
+
+Ordre conseillé : 1) publier les règles, 2) ajouter le domaine Netlify dans Authentication > Paramètres > Domaines autorisés, 3) publier index.html, 4) ouvrir le jeu, cliquer sur le petit mortier en bas à gauche de l'accueil et te connecter.

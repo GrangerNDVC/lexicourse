@@ -1,5 +1,10 @@
 # Journal des versions
 
+## v0.17 (comptes par code, Realtime Database)
+- **Firebase configuré avec ton projet « lexica »** : le jeu utilise la **Realtime Database** (comme `plume`, `visualfadette`…) et non Firestore. Nouveau nœud `jeux/lexicourse/<code à 4 chiffres>` avec `v`, `maj`, `donnees` ; `firebase/database.rules.json` contient tes règles complètes avec ce nœud ajouté.
+- **Connexion par code à 4 chiffres** branchée sur l'écran d'accueil (clic sur les cases, bouton SE CONNECTER / SE DÉCONNECTER) : nouveau code = création du profil (pseudo + classe), code existant = « C'est bien toi ? » puis chargement. Sauvegarde en ligne automatique (après chaque réponse, regroupée toutes les 1,5 s). Invité = local seulement.
+- **Écran prof** : liste des élèves lue dans `jeux/lexicourse` (colonne Code ajoutée) ; messages d'erreur de connexion explicites (domaine non autorisé, e-mail/mot de passe, réseau).
+- `firebase/README.md` réécrit : règles à publier, comptes à vérifier, **domaine autorisé à ajouter** (Authentication > Paramètres > Domaines autorisés). `firebase/firestore.rules` supprimé.
 ## v0.16 (écran prof)
 - **Écran prof** : un très petit mortier discret en bas à gauche de l'écran d'accueil (loin du badge Netlify en bas à droite) ouvre une connexion **e-mail / mot de passe Firebase**.
 - **Outils de test** : toutes les cartes, retour au départ, tutoriel / robot, réponses toujours justes, boost infini, course avec n'importe quel pilote, fins de course simulées (sans-faute, belle, ratée), tirage, adversaire-carte battu, surprise du robot, statistiques de tirage. Mode test : rien n'est envoyé aux comptes élèves ; la déconnexion restaure ta sauvegarde (restauration aussi au lancement suivant si le navigateur a été fermé avant).

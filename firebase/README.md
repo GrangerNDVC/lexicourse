@@ -1,32 +1,17 @@
-# Firebase : profil et collection de cartes
+# Firebase pour Lexicourse (Realtime Database)
 
-Le jeu fonctionne **sans** Firebase (sauvegarde dans le navigateur). Avec Firebase, la collection est sauvegardée en ligne et le professeur pourra la consulter.
+Le jeu utilise le projet Firebase **lexica** (celui de tes autres jeux) : même base **Realtime Database**, même schéma que `plume` ou `visualfadette` : un nœud par code à 4 chiffres, avec `v`, `maj`, `donnees`.
 
-## Mise en place (à faire une fois, dans la console Firebase de ton projet existant)
-1. **Authentication** : activer le fournisseur *Anonyme*. Dans *Paramètres > Domaines autorisés*, ajouter le domaine où le jeu sera publié (GitHub Pages, Netlify…).
-2. **Firestore** : ajouter le bloc de `firestore.rules` à tes règles existantes (**ne remplace pas** celles de tes autres jeux), puis publier.
-3. **Configuration web** : copier `firebase.config.example.json` en `firebase.config.json` et y coller la configuration web de ton projet (Paramètres du projet > Tes applications > Configuration). Ce n'est pas un secret : la sécurité vient des règles.
-4. Relancer `python src/tools/build.py` : le jeu demande alors un pseudo et un code de classe au premier lancement.
+## À faire une seule fois dans la console Firebase
+1. **Realtime Database > Règles** : recopier le fichier `database.rules.json` (tes règles actuelles + le nœud `jeux/lexicourse`) puis **Publier**. Si tu préfères, ajoute seulement le bloc `lexicourse` dans `jeux`.
+2. **Authentication > Méthode de connexion** : vérifier que **Anonyme** (élèves) et **E-mail/Mot de passe** (toi) sont activés. Ton compte `julie.granger.rennes@gmail.com` doit exister en e-mail/mot de passe (tu l'utilises sans doute déjà pour tes autres jeux).
+3. **Domaine du jeu : Authentication > Paramètres > Domaines autorisés > Ajouter un domaine** : ajoute le domaine Netlify du jeu (par exemple `ton-site.netlify.app`) et ton éventuel nom de domaine personnalisé, sans `https://`. `localhost` est déjà autorisé. Sans cela, la connexion échoue avec l'erreur `auth/unauthorized-domain` (le jeu affiche « Domaine non autorisé »).
+4. La configuration web est dans `firebase.config.json` (déjà remplie avec ton application « lexica »). Ce n'est pas un secret : la sécurité est dans les règles. Tu peux restreindre la clé aux sites autorisés dans Google Cloud > API et services > Identifiants.
 
-## Écran prof (connexion e-mail / mot de passe)
-Un très petit mortier gris, discret, en bas à gauche de l'écran d'accueil, ouvre l'écran prof. À faire une fois :
-1. **Authentication > Méthode de connexion** : activer *E-mail/Mot de passe* (en plus d'*Anonyme*).
-2. **Authentication > Utilisateurs > Ajouter un utilisateur** : ton e-mail et ton mot de passe.
-3. **Authentication > Paramètres > Actions de l'utilisateur** : **décocher « Activer la création (inscription) »**, pour que personne d'autre ne puisse créer de compte.
-4. **Firestore** : remplacer le bloc `lexicourse_joueurs` par celui de `firestore.rules` (mis à jour) et **remplacer `TON_EMAIL_PROF@exemple.fr` par ton adresse**, puis publier.
-5. Ajouter le domaine du jeu dans *Authentication > Paramètres > Domaines autorisés* (déjà fait si l'étape 1 de la mise en place l'est).
-
-Dans l'écran prof :
-- **Outils de test** : débloquer toutes les cartes, revenir au départ, tutoriel terminé / robot découvert, réponses toujours justes, boost infini, course test avec n'importe quel pilote, fins de course simulées (sans-faute, belle, ratée) pour vérifier les récompenses, tirage de carte, adversaire-carte battu, surprise du robot, statistiques de tirage, restauration de ta sauvegarde. Rien n'est envoyé aux comptes élèves en mode test ; « Se déconnecter » restaure ta sauvegarde (et si le navigateur est fermé avant, elle est restaurée au lancement suivant).
-- **Élèves** : liste par classe (pseudo, cartes, % de réussite, courses, dernière activité) puis fiche de chaque élève : cartes, dernières courses, questions les plus ratées.
-- En local (`localhost` ou fichier ouvert directement), l'écran prof s'ouvre **sans** Firebase pour déboguer ; en ligne, il exige la connexion.
-
-## Données enregistrées (collection `lexicourse_joueurs`, un document par joueur)
-`pseudo`, `classe`, `cartes` (identifiants des personnages obtenus), `ok` (bonnes réponses), `tot` (portiques passés), `tuto`, `robot`, `races` (nombre de courses), `hist` (30 dernières courses : date, %, cartes), `q` (réussites et erreurs par question), `maj` (date).
-**Aucun nom réel, aucune adresse, aucune photo.**
-
-## Limite connue
-La connexion anonyme est liée au navigateur : si l'élève change d'appareil ou vide son navigateur, il retrouve une collection vide. Solution prévue : code de récupération (chantier 7).
-
-## Ne jamais déposer ici
-Clés privées, fichiers de compte de service (`serviceAccount*.json`) : ils sont dans `.gitignore`.
+## Comment ça marche
+- **Élèves** : sur l'écran d'accueil, un code à 4 chiffres (on clique sur les cases) puis « SE CONNECTER ». Nouveau code : l'élève choisit un pseudo (sans nom réel) et sa classe ; code déjà utilisé : le jeu affiche le pseudo trouvé et demande « C'est bien toi ? ». « Jouer en invité » reste possible, sans sauvegarde en ligne. « SE DÉCONNECTER » efface la sauvegarde locale du poste (la progression reste dans le compte), pratique sur les ordinateurs partagés.
+- **Données** (`jeux/lexicourse/<code>`) : pseudo, classe, cartes, bonnes réponses et portiques, tutoriel, robot, nombre de courses, 30 dernières courses, réussites et erreurs par question.
+- **Toi** : un très petit mortier gris, discret, en bas à gauche de l'écran d'accueil (le badge Netlify est en bas à droite), ouvre l'écran prof. Connexion avec ton e-mail et mot de passe Firebase. En local (`localhost` ou fichier ouvert directement), l'écran prof s'ouvre sans Firebase pour déboguer.
+  - **Outils de test** : toutes les cartes, retour au départ, tutoriel / robot, réponses toujours justes, boost infini, course avec n'importe quel pilote, fins de course simulées, tirage, adversaire-carte battu, surprise du robot, statistiques de tirage, restauration de ta sauvegarde. Rien n'est envoyé aux comptes élèves en mode test.
+  - **Élèves** : liste par classe (pseudo, code, cartes, % de réussite, courses, dernière activité) et fiche par élève (cartes, 8 dernières courses, questions les plus ratées).
+- Limite connue : le code est le seul identifiant (comme tes autres jeux) ; deux élèves qui choisissent le même code partagent le même profil, d'où la question « C'est bien toi ? ».

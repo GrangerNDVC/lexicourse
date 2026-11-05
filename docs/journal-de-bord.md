@@ -38,6 +38,7 @@
 - 03/11 — Recoloration par code branchée au jeu (variantes d'un même modèle, sprites recolorés dans le navigateur). 10 variantes communes ajoutées (scooter et citadine bleue). À décider : quelles couleurs pour quelles rares, et les autres modèles recolorables.
 - 03/11 — Priorité : écran prof (connexion Firebase e-mail / mot de passe, outils de test, suivi des élèves), accessible par une petite icône discrète en bas à gauche.
 - 03/11 — Plan des courses (`docs/plan-des-courses.md`) : univers neige, port, volcan, lune, désert ; une spécificité de jeu et une pédagogie par course (marche du robot, glisse, ponts, sauts, virages).
+- 04/11 — Firebase : le projet de Julie (« lexica ») utilise la Realtime Database avec des nœuds `jeux/<jeu>/<code à 4 chiffres>` ; Lexicourse s'aligne (`jeux/lexicourse`), la connexion par code est branchée et l'écran prof lit ce nœud. Compte professeur : e-mail et mot de passe Firebase.
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).
