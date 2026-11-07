@@ -1,0 +1,9 @@
+Mise à jour Lexicourse v0.18 — duel contre un adversaire
+
+index.html                       -> racine du dépôt : jeu complet, 36 pilotes, duel, Firebase déjà configuré
+src/template.html                -> remplace l'ancien
+docs/regles-de-jeu.md            -> remplace l'ancien (nouvelle section « Duel »)
+CHANGELOG.md, docs/*             -> remplacent les anciens
+firebase/*                       -> inchangés depuis la v0.17 (règles à publier si ce n'est pas déjà fait)
+
+À tester : Accueil > Jouer > Tutoriel > 1 Entraînement seul (à terminer) > 2 Course contre un adversaire.

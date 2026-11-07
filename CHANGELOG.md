@@ -1,5 +1,11 @@
 # Journal des versions
 
+## v0.18 (duel contre un adversaire)
+- **Tutoriel 2 jouable** : course contre l'autre voiture de départ, visible sur la piste, avec une **jauge de course** verticale à droite (Toi / adversaire). **Victoire = arriver devant.** Elle se trompe 4 fois sur 10.
+- **Garantie à 100 %** : tant que l'élève ne s'est pas trompé, l'adversaire reste derrière lui. Défaite : revanche plus facile (+5 points d'erreurs, 3 fois au maximum).
+- **Première victoire** : une carte **rare** garantie ; victoires suivantes : plus de chances de belle carte ; la surprise du robot se déclenche si le robot n'est pas encore découvert.
+- **Niveaux pour les futures courses** : erreurs de l'adversaire selon la rareté de sa carte (40 / 30 / 20 %), **−3 points à chaque victoire** jusqu'à 25 / 15 / 8 % ; chances d'affronter des cartes plus rares qui augmentent avec les victoires (`pickRival`).
+- Écran prof : outils « Duel test », « Fin de duel : victoire / défaite » ; la fiche élève affiche les duels gagnés. Détails : `docs/regles-de-jeu.md`.
 ## v0.17 (comptes par code, Realtime Database)
 - **Firebase configuré avec ton projet « lexica »** : le jeu utilise la **Realtime Database** (comme `plume`, `visualfadette`…) et non Firestore. Nouveau nœud `jeux/lexicourse/<code à 4 chiffres>` avec `v`, `maj`, `donnees` ; `firebase/database.rules.json` contient tes règles complètes avec ce nœud ajouté.
 - **Connexion par code à 4 chiffres** branchée sur l'écran d'accueil (clic sur les cases, bouton SE CONNECTER / SE DÉCONNECTER) : nouveau code = création du profil (pseudo + classe), code existant = « C'est bien toi ? » puis chargement. Sauvegarde en ligne automatique (après chaque réponse, regroupée toutes les 1,5 s). Invité = local seulement.

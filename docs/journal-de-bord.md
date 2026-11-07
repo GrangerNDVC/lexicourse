@@ -39,6 +39,7 @@
 - 03/11 — Priorité : écran prof (connexion Firebase e-mail / mot de passe, outils de test, suivi des élèves), accessible par une petite icône discrète en bas à gauche.
 - 03/11 — Plan des courses (`docs/plan-des-courses.md`) : univers neige, port, volcan, lune, désert ; une spécificité de jeu et une pédagogie par course (marche du robot, glisse, ponts, sauts, virages).
 - 04/11 — Firebase : le projet de Julie (« lexica ») utilise la Realtime Database avec des nœuds `jeux/<jeu>/<code à 4 chiffres>` ; Lexicourse s'aligne (`jeux/lexicourse`), la connexion par code est branchée et l'écran prof lit ce nœud. Compte professeur : e-mail et mot de passe Firebase.
+- 05/11 — Duel (tutoriel 2) : victoire = arriver devant ; adversaire à 40 % d'erreurs ; −3 points d'erreurs à chaque victoire, plus de cartes rares affrontées au fil des victoires ; à 100 % l'élève gagne toujours (l'adversaire reste derrière tant qu'il n'y a pas d'erreur).
 
 ## Bugs et limites connus
 - Transformations rouge et jaune : l'angle de caméra change en cours de séquence (retouches 1 à 3 de la feuille de route).
